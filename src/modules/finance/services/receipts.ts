@@ -4,10 +4,7 @@ import { emitEvent } from "@/modules/kernel/workflows";
 import type { CreateReceiptInput, ReceiptFilters } from "../entities";
 import { Receipt, ReceiptStatus } from "@prisma/client";
 
-export async function createReceipt(
-  spaceId: string,
-  input: CreateReceiptInput
-): Promise<Receipt> {
+export async function createReceipt(spaceId: string, input: CreateReceiptInput): Promise<Receipt> {
   const netAmount = input.grossAmount / (1 + (input.vatRate ?? 0.19));
   const vatAmount = input.grossAmount - netAmount;
 
@@ -50,10 +47,7 @@ export async function createReceiptFromUpload(
   });
 }
 
-export async function listReceipts(
-  spaceId: string,
-  filters?: ReceiptFilters
-): Promise<Receipt[]> {
+export async function listReceipts(spaceId: string, filters?: ReceiptFilters): Promise<Receipt[]> {
   const where: any = { spaceId };
 
   if (filters?.status) {

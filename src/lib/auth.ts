@@ -1,10 +1,10 @@
-import { NextAuthOptions } from "next-auth";
+import type { NextAuthConfig } from "next-auth";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { compare } from "bcryptjs";
 import { db } from "./db";
 
-export const authOptions: NextAuthOptions = {
+export const authOptions: NextAuthConfig = {
   adapter: PrismaAdapter(db) as any,
   session: {
     strategy: "jwt",
@@ -22,19 +22,22 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
+        const email = credentials?.email as string | undefined;
+        const password = credentials?.password as string | undefined;
+
+        if (!email || !password) {
           throw new Error("Email and password required");
         }
 
         const user = await db.user.findUnique({
-          where: { email: credentials.email },
+          where: { email },
         });
 
         if (!user || !user.password) {
           throw new Error("Invalid email or password");
         }
 
-        const isPasswordValid = await compare(credentials.password, user.password);
+        const isPasswordValid = await compare(password, user.password);
 
         if (!isPasswordValid) {
           throw new Error("Invalid email or password");
@@ -42,7 +45,7 @@ export const authOptions: NextAuthOptions = {
 
         return {
           id: user.id,
-          email: user.email,
+          email: user.email as string,
           name: user.name,
         };
       },
@@ -65,7 +68,7 @@ export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
 };
 
-export async function getCurrentUser(req: Request) {
+export async function getCurrentUser(_req: Request) {
   // This would be implemented using getServerSession in route handlers
   // For now, this is a placeholder
   return null;

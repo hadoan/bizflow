@@ -127,7 +127,7 @@ class AIClient {
     };
   }
 
-  private getMockResponse(params: AICompletionParams): AICompletionResponse {
+  private getMockResponse(_params: AICompletionParams): AICompletionResponse {
     return {
       content: "Mock AI response (API key not configured)",
       finishReason: "mock",

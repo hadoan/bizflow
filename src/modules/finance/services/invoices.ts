@@ -1,11 +1,7 @@
 import { db } from "@/lib/db";
 import { calculateVAT, calculateGross } from "@/lib/utils";
 import { emitEvent } from "@/modules/kernel/workflows";
-import type {
-  CreateInvoiceInput,
-  InvoiceWithLineItems,
-  InvoiceFilters,
-} from "../entities";
+import type { CreateInvoiceInput, InvoiceWithLineItems, InvoiceFilters } from "../entities";
 import { InvoiceStatus } from "@prisma/client";
 
 export async function createInvoice(

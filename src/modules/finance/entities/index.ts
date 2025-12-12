@@ -51,6 +51,7 @@ export interface CreateReceiptInput {
   currency?: string;
   category?: string;
   fileId?: string;
+  vatRate?: number;
 }
 
 export interface InvoiceFilters {

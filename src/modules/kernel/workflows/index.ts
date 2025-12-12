@@ -50,11 +50,7 @@ class EventBus {
 
 export const eventBus = new EventBus();
 
-export async function emitEvent<T = unknown>(
-  eventName: EventName,
-  spaceId: string,
-  payload: T
-) {
+export async function emitEvent<T = unknown>(eventName: EventName, spaceId: string, payload: T) {
   await eventBus.emit(eventName, spaceId, payload);
 }
 

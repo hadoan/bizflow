@@ -68,7 +68,10 @@ Provide a brief summary, key details, and recommendations if applicable.`;
 
     return {
       summary: response.content.split("\n")[0],
-      details: response.content.split("\n").slice(1).filter((line) => line.trim()),
+      details: response.content
+        .split("\n")
+        .slice(1)
+        .filter((line) => line.trim()),
     };
   } catch (error) {
     console.error("Tax explanation error:", error);

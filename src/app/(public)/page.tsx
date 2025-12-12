@@ -9,16 +9,16 @@ export default function HomePage() {
         <p className="mb-12 text-lg text-gray-500">
           The intelligent back office for freelancers and solo founders in Germany
         </p>
-        <div className="flex gap-4 justify-center">
+        <div className="flex justify-center gap-4">
           <Link
             href="/login"
-            className="rounded-lg bg-primary-600 px-8 py-3 text-white hover:bg-primary-700 transition"
+            className="rounded-lg bg-primary-600 px-8 py-3 text-white transition hover:bg-primary-700"
           >
             Sign In
           </Link>
           <Link
             href="/register"
-            className="rounded-lg border border-gray-300 px-8 py-3 text-gray-700 hover:bg-gray-50 transition"
+            className="rounded-lg border border-gray-300 px-8 py-3 text-gray-700 transition hover:bg-gray-50"
           >
             Get Started
           </Link>

@@ -28,7 +28,7 @@ class LocalStorageAdapter implements StorageAdapter {
     }
   }
 
-  async upload(key: string, data: Buffer, metadata?: StorageMetadata): Promise<string> {
+  async upload(key: string, data: Buffer, _metadata?: StorageMetadata): Promise<string> {
     const filePath = join(this.basePath, key);
     const dir = join(this.basePath, key.split("/").slice(0, -1).join("/"));
 
@@ -78,17 +78,17 @@ class S3StorageAdapter implements StorageAdapter {
     this.region = config.region;
   }
 
-  async upload(key: string, data: Buffer, metadata?: StorageMetadata): Promise<string> {
+  async upload(_key: string, _data: Buffer, _metadata?: StorageMetadata): Promise<string> {
     // TODO: Implement S3-compatible upload using AWS SDK or similar
     throw new Error("S3 storage not yet implemented");
   }
 
-  async download(key: string): Promise<Buffer> {
+  async download(_key: string): Promise<Buffer> {
     // TODO: Implement S3-compatible download
     throw new Error("S3 storage not yet implemented");
   }
 
-  async delete(key: string): Promise<void> {
+  async delete(_key: string): Promise<void> {
     // TODO: Implement S3-compatible delete
     throw new Error("S3 storage not yet implemented");
   }
@@ -121,11 +121,7 @@ function createStorageAdapter(): StorageAdapter {
 
 export const storage = createStorageAdapter();
 
-export async function uploadFile(
-  spaceId: string,
-  file: File,
-  category?: string
-): Promise<string> {
+export async function uploadFile(spaceId: string, file: File, category?: string): Promise<string> {
   const timestamp = Date.now();
   const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
   const key = category
@@ -145,6 +141,6 @@ export async function deleteFile(key: string): Promise<void> {
   await storage.delete(key);
 }
 
-export async function getFileUrl(key: string): string {
+export async function getFileUrl(key: string): Promise<string> {
   return storage.getUrl(key);
 }
