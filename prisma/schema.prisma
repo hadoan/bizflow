@@ -300,6 +300,7 @@ model InboxItem {
   type              InboxItemType   @default(GENERAL)
   title             String
   description       String?
+  metadata          Json?
   relatedEntityType String?
   relatedEntityId   String?
   status            InboxItemStatus @default(OPEN)

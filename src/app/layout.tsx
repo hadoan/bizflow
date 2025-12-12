@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { SessionProvider } from "@/components/providers/session-provider";
+// Import workflows to ensure they're loaded
+import "@/modules/finance/workflows";
 
 export const metadata: Metadata = {
   title: "Bizflow - AI-native business OS",

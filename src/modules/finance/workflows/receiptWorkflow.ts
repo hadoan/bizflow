@@ -3,7 +3,7 @@ import { suggestReceiptCategorisation } from "@/modules/kernel/ai";
 import { db } from "@/lib/db";
 import { updateReceipt } from "../services/receipts";
 
-async function handleNewReceipt(event: { payload: { receiptId: string } }) {
+export async function handleNewReceipt(event: { payload: { receiptId: string } }) {
   const { receiptId } = event.payload;
 
   try {
@@ -13,26 +13,40 @@ async function handleNewReceipt(event: { payload: { receiptId: string } }) {
 
     if (!receipt) return;
 
-    const suggestion = await suggestReceiptCategorisation({
-      text: `Receipt from ${receipt.vendorName} for €${receipt.grossAmount}`,
-      amount: Number(receipt.grossAmount),
-      vendor: receipt.vendorName,
-    });
+    let suggestion;
+    try {
+      suggestion = await suggestReceiptCategorisation({
+        text: `Receipt from ${receipt.vendorName} for €${receipt.grossAmount}`,
+        amount: Number(receipt.grossAmount),
+        vendor: receipt.vendorName,
+      });
+    } catch (aiError) {
+      console.error("AI categorization failed:", aiError);
+      // Fallback suggestion
+      suggestion = {
+        category: "Other" as const,
+        vatRate: 0.19,
+        explanation: "Fallback categorization (AI unavailable)",
+      };
+    }
 
-    await updateReceipt(receipt.spaceId, receiptId, {
-      category: suggestion.category,
-      vatRate: suggestion.vatRate,
-    });
-
+    // Store the AI suggestion in the InboxItem, don't update the receipt yet
     await db.inboxItem.create({
       data: {
         spaceId: receipt.spaceId,
         type: "RECEIPT_REVIEW",
         title: `Review receipt: ${receipt.vendorName}`,
-        description: `AI suggested category: ${suggestion.category} (${suggestion.explanation})`,
+        description: `AI suggests: ${suggestion.category} (${suggestion.explanation}). Amount: €${receipt.grossAmount}`,
         relatedEntityType: "Receipt",
         relatedEntityId: receiptId,
         status: "OPEN",
+        metadata: {
+          aiSuggestion: {
+            category: suggestion.category,
+            vatRate: suggestion.vatRate,
+            explanation: suggestion.explanation,
+          },
+        },
       },
     });
   } catch (error) {
