@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { InvoiceStatus } from "@prisma/client";
+import { InvoiceStatus, ReceiptStatus } from "@prisma/client";
 
 // Invoice line item schema
 export const createInvoiceLineItemSchema = z.object({
@@ -19,6 +19,24 @@ export const createInvoiceSchema = z.object({
   lineItems: z.array(createInvoiceLineItemSchema).min(1, "At least one line item is required"),
 });
 
+// Receipt upload schema
+export const createReceiptFromUploadSchema = z.object({
+  fileId: z.string().min(1, "File ID is required"),
+  vendorName: z.string().min(1, "Vendor name is required"),
+  documentDate: z.string().transform((str) => new Date(str)),
+  grossAmount: z.number().positive("Gross amount must be positive"),
+  currency: z.string().optional().default("EUR"),
+  category: z.string().optional(),
+  vatRate: z.number().min(0).max(1, "VAT rate must be between 0 and 1").optional().default(0.19),
+});
+
+// Receipt filters schema for query parameters
+export const receiptFiltersSchema = z.object({
+  status: z.nativeEnum(ReceiptStatus).optional(),
+  category: z.string().optional(),
+  period: z.string().optional(), // Format: "YYYY-MM" or "YYYY"
+});
+
 // Invoice filters schema for query parameters
 export const invoiceFiltersSchema = z.object({
   status: z.nativeEnum(InvoiceStatus).optional(),
@@ -27,4 +45,6 @@ export const invoiceFiltersSchema = z.object({
 
 // Type exports
 export type CreateInvoiceInput = z.infer<typeof createInvoiceSchema>;
+export type CreateReceiptFromUploadInput = z.infer<typeof createReceiptFromUploadSchema>;
+export type ReceiptFilters = z.infer<typeof receiptFiltersSchema>;
 export type InvoiceFilters = z.infer<typeof invoiceFiltersSchema>;
