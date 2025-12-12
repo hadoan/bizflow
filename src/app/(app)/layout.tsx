@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AppHeader } from "./app-header";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -42,15 +43,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </nav>
       </aside>
       <main className="flex-1">
-        <header className="border-b border-gray-200 bg-white px-8 py-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-gray-900">Welcome back</h2>
-            <div className="flex items-center gap-4">
-              <button className="text-sm text-gray-600 hover:text-gray-900">Settings</button>
-              <button className="text-sm text-gray-600 hover:text-gray-900">Logout</button>
-            </div>
-          </div>
-        </header>
+        <AppHeader />
         <div className="p-8">{children}</div>
       </main>
     </div>

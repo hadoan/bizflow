@@ -1,4 +1,5 @@
 import type { NextAuthConfig } from "next-auth";
+import NextAuth from "next-auth";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { compare } from "bcryptjs";
@@ -68,14 +69,23 @@ export const authOptions: NextAuthConfig = {
   secret: process.env.NEXTAUTH_SECRET,
 };
 
-export async function getCurrentUser(_req: Request) {
-  // This would be implemented using getServerSession in route handlers
-  // For now, this is a placeholder
-  return null;
+// Export NextAuth handlers and helpers
+export const { handlers, auth, signIn, signOut } = NextAuth(authOptions);
+
+/**
+ * Get the current authenticated user from the session
+ * Use this in Server Components and Server Actions
+ */
+export async function getCurrentUser() {
+  const session = await auth();
+  return session?.user ?? null;
 }
 
-export async function requireAuth(req: Request) {
-  const user = await getCurrentUser(req);
+/**
+ * Require authentication, throw error if not authenticated
+ */
+export async function requireAuth() {
+  const user = await getCurrentUser();
   if (!user) {
     throw new Error("Unauthorized");
   }
