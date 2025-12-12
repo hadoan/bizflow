@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: bizflow-postgres
+    environment:
+      POSTGRES_USER: bizflow
+      POSTGRES_PASSWORD: bizflow_dev_password
+      POSTGRES_DB: bizflow_dev
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U bizflow']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bizflow-app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - '3000:3000'
+    environment:
+      DATABASE_URL: postgresql://bizflow:bizflow_dev_password@postgres:5432/bizflow_dev
+      NEXTAUTH_SECRET: dev-secret-change-in-production
+      NEXTAUTH_URL: http://localhost:3000
+      AI_PROVIDER: openai
+      NODE_ENV: production
+    volumes:
+      - ./uploads:/app/uploads
+
+volumes:
+  postgres_data:
