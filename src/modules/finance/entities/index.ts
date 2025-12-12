@@ -24,6 +24,11 @@ export type {
   TaxPeriodStatus,
 };
 
+// Domain type aliases
+export type FinanceInvoice = Invoice;
+export type FinanceReceipt = Receipt;
+export type FinanceInvoiceLineItem = InvoiceLineItem;
+
 export interface InvoiceWithLineItems extends Invoice {
   lineItems: InvoiceLineItem[];
 }
