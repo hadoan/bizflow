@@ -147,3 +147,19 @@ export async function generateCompletion(
 ): Promise<AICompletionResponse> {
   return ai.complete(params);
 }
+
+export async function callLLM(
+  prompt: string,
+  options?: { system?: string }
+): Promise<string> {
+  const messages: AIMessage[] = [];
+
+  if (options?.system) {
+    messages.push({ role: "system", content: options.system });
+  }
+
+  messages.push({ role: "user", content: prompt });
+
+  const response = await ai.complete({ messages });
+  return response.content;
+}
