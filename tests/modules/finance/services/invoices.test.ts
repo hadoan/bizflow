@@ -14,6 +14,9 @@ import { InvoiceStatus } from "@prisma/client";
 // Mock dependencies
 vi.mock("@/lib/db", () => ({
   db: {
+    client: {
+      findFirst: vi.fn(),
+    },
     invoice: {
       create: vi.fn(),
       findMany: vi.fn(),
@@ -35,6 +38,7 @@ describe("Invoice Services", () => {
 
   describe("createInvoice", () => {
     it("should create an invoice with line items", async () => {
+      const mockClient = { id: "client-1", spaceId: "space-1", name: "Test Client" };
       const mockInvoice = {
         id: "inv-1",
         spaceId: "space-1",
@@ -61,6 +65,7 @@ describe("Invoice Services", () => {
         ],
       };
 
+      (db.client.findFirst as any).mockResolvedValue(mockClient);
       (db.invoice.create as any).mockResolvedValue(mockInvoice);
 
       const input = {
@@ -117,6 +122,30 @@ describe("Invoice Services", () => {
       });
 
       expect(result).toEqual(mockInvoice);
+    });
+
+    it("should throw error if client does not exist", async () => {
+      (db.client.findFirst as any).mockResolvedValue(null);
+
+      const input = {
+        clientId: "client-1",
+        number: "2024-001",
+        issueDate: new Date("2024-01-01"),
+        dueDate: new Date("2024-01-31"),
+        currency: "EUR",
+        lineItems: [
+          {
+            description: "Service",
+            quantity: 1,
+            unitPrice: 100,
+            vatRate: 0.19,
+          },
+        ],
+      };
+
+      await expect(createInvoice("space-1", input)).rejects.toThrow(
+        "Client not found or does not belong to this space"
+      );
     });
   });
 

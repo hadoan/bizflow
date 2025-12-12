@@ -8,6 +8,18 @@ export async function createInvoice(
   spaceId: string,
   input: CreateInvoiceInput
 ): Promise<InvoiceWithLineItems> {
+  // Validate that the client exists and belongs to the space
+  const client = await db.client.findFirst({
+    where: {
+      id: input.clientId,
+      spaceId,
+    },
+  });
+
+  if (!client) {
+    throw new Error("Client not found or does not belong to this space");
+  }
+
   let totalNet = 0;
   let totalVat = 0;
 
