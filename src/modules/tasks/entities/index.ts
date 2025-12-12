@@ -13,6 +13,14 @@ export interface TaskFilters {
   overdue?: boolean;
 }
 
+export interface CreateInboxItemInput {
+  type?: InboxItemType;
+  title: string;
+  description?: string;
+  relatedEntityType?: string;
+  relatedEntityId?: string;
+}
+
 export interface InboxItemFilters {
   status?: InboxItemStatus;
   type?: InboxItemType;

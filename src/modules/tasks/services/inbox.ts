@@ -1,6 +1,20 @@
 import { db } from "@/lib/db";
-import type { InboxItemFilters, InboxItem } from "../entities";
-import { InboxItemStatus } from "@prisma/client";
+import type { CreateInboxItemInput, InboxItemFilters, InboxItem } from "../entities";
+import { InboxItemStatus, InboxItemType } from "@prisma/client";
+
+export async function createInboxItem(spaceId: string, input: CreateInboxItemInput): Promise<InboxItem> {
+  return await db.inboxItem.create({
+    data: {
+      spaceId,
+      type: input.type ?? InboxItemType.GENERAL,
+      title: input.title,
+      description: input.description,
+      relatedEntityType: input.relatedEntityType,
+      relatedEntityId: input.relatedEntityId,
+      status: InboxItemStatus.OPEN,
+    },
+  });
+}
 
 export async function listInboxItems(
   spaceId: string,
