@@ -1,36 +1,35 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createReceipt, listReceipts } from "@/modules/finance/services";
+import { getCurrentUserWithSpace } from "@/lib/auth";
 
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
   try {
-    const spaceId = req.headers.get("x-space-id");
+    // Get authenticated user and their default space
+    const { space } = await getCurrentUserWithSpace();
 
-    if (!spaceId) {
-      return NextResponse.json({ error: "Space ID required" }, { status: 400 });
-    }
-
-    const receipts = await listReceipts(spaceId);
+    const receipts = await listReceipts(space.id);
     return NextResponse.json(receipts);
   } catch (error) {
     console.error("List receipts error:", error);
-    return NextResponse.json({ error: "Failed to fetch receipts" }, { status: 500 });
+    const message = error instanceof Error ? error.message : "Failed to fetch receipts";
+    const status = message === "Unauthorized" ? 401 : 500;
+    return NextResponse.json({ error: message }, { status });
   }
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const spaceId = req.headers.get("x-space-id");
-
-    if (!spaceId) {
-      return NextResponse.json({ error: "Space ID required" }, { status: 400 });
-    }
+    // Get authenticated user and their default space
+    const { space } = await getCurrentUserWithSpace();
 
     const body = await req.json();
-    const receipt = await createReceipt(spaceId, body);
+    const receipt = await createReceipt(space.id, body);
 
     return NextResponse.json(receipt, { status: 201 });
   } catch (error) {
     console.error("Create receipt error:", error);
-    return NextResponse.json({ error: "Failed to create receipt" }, { status: 500 });
+    const message = error instanceof Error ? error.message : "Failed to create receipt";
+    const status = message === "Unauthorized" ? 401 : 500;
+    return NextResponse.json({ error: message }, { status });
   }
 }

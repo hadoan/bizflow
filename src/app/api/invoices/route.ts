@@ -1,36 +1,35 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createInvoice, listInvoices } from "@/modules/finance/services";
+import { getCurrentUserWithSpace } from "@/lib/auth";
 
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
   try {
-    const spaceId = req.headers.get("x-space-id");
+    // Get authenticated user and their default space
+    const { space } = await getCurrentUserWithSpace();
 
-    if (!spaceId) {
-      return NextResponse.json({ error: "Space ID required" }, { status: 400 });
-    }
-
-    const invoices = await listInvoices(spaceId);
+    const invoices = await listInvoices(space.id);
     return NextResponse.json(invoices);
   } catch (error) {
     console.error("List invoices error:", error);
-    return NextResponse.json({ error: "Failed to fetch invoices" }, { status: 500 });
+    const message = error instanceof Error ? error.message : "Failed to fetch invoices";
+    const status = message === "Unauthorized" ? 401 : 500;
+    return NextResponse.json({ error: message }, { status });
   }
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const spaceId = req.headers.get("x-space-id");
-
-    if (!spaceId) {
-      return NextResponse.json({ error: "Space ID required" }, { status: 400 });
-    }
+    // Get authenticated user and their default space
+    const { space } = await getCurrentUserWithSpace();
 
     const body = await req.json();
-    const invoice = await createInvoice(spaceId, body);
+    const invoice = await createInvoice(space.id, body);
 
     return NextResponse.json(invoice, { status: 201 });
   } catch (error) {
     console.error("Create invoice error:", error);
-    return NextResponse.json({ error: "Failed to create invoice" }, { status: 500 });
+    const message = error instanceof Error ? error.message : "Failed to create invoice";
+    const status = message === "Unauthorized" ? 401 : 500;
+    return NextResponse.json({ error: message }, { status });
   }
 }

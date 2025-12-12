@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getTaxOverview, getTaxPeriods } from "@/modules/finance/services";
 import { TaxPeriodType } from "@prisma/client";
+import { getCurrentUserWithSpace } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
   try {
-    const spaceId = req.headers.get("x-space-id");
-
-    if (!spaceId) {
-      return NextResponse.json({ error: "Space ID required" }, { status: 400 });
-    }
+    // Get authenticated user and their default space
+    const { space } = await getCurrentUserWithSpace();
 
     const { searchParams } = new URL(req.url);
     const year = searchParams.get("year");
@@ -17,7 +15,7 @@ export async function GET(req: NextRequest) {
 
     if (year && periodType && periodValue) {
       const overview = await getTaxOverview(
-        spaceId,
+        space.id,
         parseInt(year),
         periodType,
         parseInt(periodValue)
@@ -25,10 +23,12 @@ export async function GET(req: NextRequest) {
       return NextResponse.json(overview);
     }
 
-    const periods = await getTaxPeriods(spaceId, year ? parseInt(year) : undefined);
+    const periods = await getTaxPeriods(space.id, year ? parseInt(year) : undefined);
     return NextResponse.json(periods);
   } catch (error) {
     console.error("Tax API error:", error);
-    return NextResponse.json({ error: "Failed to fetch tax data" }, { status: 500 });
+    const message = error instanceof Error ? error.message : "Failed to fetch tax data";
+    const status = message === "Unauthorized" ? 401 : 500;
+    return NextResponse.json({ error: message }, { status });
   }
 }

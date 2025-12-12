@@ -127,3 +127,32 @@ export async function requireSpaceAccess(userId: string, spaceId: string) {
     throw new Error("Access denied to this space");
   }
 }
+
+/**
+ * Get the default space for a user (alias for getDefaultSpace)
+ * In V1, each user has one space
+ */
+export async function getDefaultSpaceForUser(userId: string) {
+  return getDefaultSpace(userId);
+}
+
+/**
+ * Get the current user and their default space
+ * Convenience function for API handlers
+ * @returns Object with user and space, or throws if not authenticated
+ */
+export async function getCurrentUserWithSpace() {
+  const user = await requireAuth();
+
+  if (!user.id) {
+    throw new Error("User ID not found in session");
+  }
+
+  const space = await getDefaultSpace(user.id);
+
+  if (!space) {
+    throw new Error("No space found for user");
+  }
+
+  return { user, space };
+}
