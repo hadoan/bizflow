@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { InvoiceStatus, ReceiptStatus } from "@prisma/client";
+import { InvoiceStatus, ReceiptStatus, TaxPeriodType } from "@prisma/client";
 
 // Invoice line item schema
 export const createInvoiceLineItemSchema = z.object({
@@ -48,3 +48,20 @@ export type CreateInvoiceInput = z.infer<typeof createInvoiceSchema>;
 export type CreateReceiptFromUploadInput = z.infer<typeof createReceiptFromUploadSchema>;
 export type ReceiptFilters = z.infer<typeof receiptFiltersSchema>;
 export type InvoiceFilters = z.infer<typeof invoiceFiltersSchema>;
+
+// Tax overview schema for query parameters
+export const taxOverviewQuerySchema = z.object({
+  year: z.string().transform((str) => parseInt(str)),
+  periodType: z.nativeEnum(TaxPeriodType),
+  periodValue: z.string().transform((str) => parseInt(str)),
+});
+
+// Tax overview schema for JSON body
+export const taxOverviewBodySchema = z.object({
+  year: z.number().int().positive(),
+  periodType: z.nativeEnum(TaxPeriodType),
+  periodValue: z.number().int().positive(),
+});
+
+export type TaxOverviewQuery = z.infer<typeof taxOverviewQuerySchema>;
+export type TaxOverviewBody = z.infer<typeof taxOverviewBodySchema>;
