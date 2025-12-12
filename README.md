@@ -46,11 +46,14 @@ The architecture supports adding:
 
 ### Prerequisites
 
-- Node.js 20+
-- PostgreSQL 16+
-- npm 10+
+- **Node.js** 20+ (or use Docker)
+- **pnpm** 9+ (package manager - install with `npm install -g pnpm`)
+- **PostgreSQL** 16+ (or use Docker Compose)
+- **Docker** & **Docker Compose** (optional, for containerized setup)
 
 ### Installation
+
+#### Option 1: Local Development
 
 1. Clone the repository:
 
@@ -62,17 +65,17 @@ cd bizflow
 2. Install dependencies:
 
 ```bash
-npm install
+pnpm install
 ```
 
 3. Set up environment variables:
 
 ```bash
-cp .env.example .env
+cp .env.example .env.local
 ```
 
-Edit `.env` and configure:
-- `DATABASE_URL` - Your PostgreSQL connection string
+Edit `.env.local` and configure:
+- `DATABASE_URL` - Your PostgreSQL connection string (see [docker setup](#docker-setup))
 - `NEXTAUTH_SECRET` - Generate with `openssl rand -base64 32`
 - `AI_API_KEY` - (Optional) Your OpenAI or Anthropic API key
 
@@ -80,22 +83,26 @@ Edit `.env` and configure:
 
 ```bash
 # Generate Prisma client
-npm run db:generate
+pnpm db:generate
 
 # Run migrations
-npm run db:push
+pnpm db:push
 
 # Seed demo data
-npm run db:seed
+pnpm db:seed
 ```
 
 5. Start the development server:
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
 Visit [http://localhost:3000](http://localhost:3000)
+
+#### Option 2: Using Docker Compose
+
+See [Docker Setup](#docker-setup) section below for full container setup.
 
 ### Demo Credentials
 
@@ -105,17 +112,104 @@ After seeding:
 
 ## Docker Setup
 
-Run the entire stack with Docker:
+### Quick Start
+
+Run the entire stack with Docker Compose:
 
 ```bash
-# Start PostgreSQL + app
-npm run docker:dev
-
-# Or manually:
+# Start PostgreSQL + Next.js app
 docker-compose up -d
+
+# Watch logs
+docker-compose logs -f
+
+# Stop services
+docker-compose down
 ```
 
 The app will be available at [http://localhost:3000](http://localhost:3000)
+
+### Services
+
+The `docker-compose.yml` includes:
+
+- **PostgreSQL 16-alpine** - Database service
+  - Container: `bizflow-postgres`
+  - Port: `5432`
+  - Credentials:
+    - Username: `bizflow`
+    - Password: `bizflow_dev_password`
+    - Database: `bizflow_dev`
+
+- **Next.js App** - Application service
+  - Container: `bizflow-app`
+  - Port: `3000`
+  - Database: `postgresql://bizflow:bizflow_dev_password@postgres:5432/bizflow_dev`
+
+### Database Setup in Docker
+
+When using Docker Compose, the app automatically:
+1. Waits for PostgreSQL to be healthy
+2. Generates the Prisma client
+3. Runs database migrations
+4. Seeds demo data
+
+### Environment for Docker
+
+When running with Docker, use this DATABASE_URL in `.env`:
+
+```bash
+DATABASE_URL="postgresql://bizflow:bizflow_dev_password@postgres:5432/bizflow_dev"
+```
+
+### Useful Commands
+
+```bash
+# Start all services
+docker-compose up
+
+# Start in background
+docker-compose up -d
+
+# Stop all services
+docker-compose down
+
+# Remove volumes (clean database)
+docker-compose down -v
+
+# View logs
+docker-compose logs -f app
+docker-compose logs -f postgres
+
+# Execute command in running container
+docker-compose exec app pnpm db:seed
+
+# Rebuild images
+docker-compose up --build
+```
+
+### Data Persistence
+
+- PostgreSQL data is stored in the `postgres_data` volume
+- Application uploads are stored in `./uploads/` directory
+- Both are preserved when using `docker-compose down`
+- Use `docker-compose down -v` to delete everything
+
+### Network
+
+Services communicate through the `bizflow-network` bridge network:
+- App connects to PostgreSQL using hostname `postgres` (not `localhost`)
+- Both services can be accessed from your machine on configured ports
+
+### Production Deployment
+
+For production, ensure:
+1. Change `NEXTAUTH_SECRET` to a strong random value
+2. Update `DATABASE_URL` to your production database
+3. Set `NODE_ENV=production`
+4. Configure proper storage (S3, etc.) instead of local uploads
+5. Use strong credentials for PostgreSQL
+6. Don't expose database port in production
 
 ## Project Structure
 

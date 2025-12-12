@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   postgres:
@@ -9,14 +9,16 @@ services:
       POSTGRES_PASSWORD: bizflow_dev_password
       POSTGRES_DB: bizflow_dev
     ports:
-      - '5432:5432'
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U bizflow']
+      test: ["CMD-SHELL", "pg_isready -U bizflow"]
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - bizflow-network
 
   app:
     build:
@@ -27,7 +29,7 @@ services:
       postgres:
         condition: service_healthy
     ports:
-      - '3000:3000'
+      - "3000:3000"
     environment:
       DATABASE_URL: postgresql://bizflow:bizflow_dev_password@postgres:5432/bizflow_dev
       NEXTAUTH_SECRET: dev-secret-change-in-production
@@ -36,6 +38,12 @@ services:
       NODE_ENV: production
     volumes:
       - ./uploads:/app/uploads
+    networks:
+      - bizflow-network
+
+networks:
+  bizflow-network:
+    driver: bridge
 
 volumes:
   postgres_data:
