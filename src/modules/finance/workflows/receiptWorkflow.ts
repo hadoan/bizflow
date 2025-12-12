@@ -14,9 +14,9 @@ async function handleNewReceipt(event: { payload: { receiptId: string } }) {
     if (!receipt) return;
 
     const suggestion = await suggestReceiptCategorisation({
-      vendorName: receipt.vendorName,
+      text: `Receipt from ${receipt.vendorName} for €${receipt.grossAmount}`,
       amount: Number(receipt.grossAmount),
-      documentDate: receipt.documentDate.toISOString(),
+      vendor: receipt.vendorName,
     });
 
     await updateReceipt(receipt.spaceId, receiptId, {
@@ -29,7 +29,7 @@ async function handleNewReceipt(event: { payload: { receiptId: string } }) {
         spaceId: receipt.spaceId,
         type: "RECEIPT_REVIEW",
         title: `Review receipt: ${receipt.vendorName}`,
-        description: `AI suggested category: ${suggestion.category} (${(suggestion.confidence * 100).toFixed(0)}% confidence)`,
+        description: `AI suggested category: ${suggestion.category} (${suggestion.explanation})`,
         relatedEntityType: "Receipt",
         relatedEntityId: receiptId,
         status: "OPEN",
