@@ -1,13 +1,12 @@
 "use client";
 
-import { useMemo, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import Link from "next/link";
 import type { Route } from "next";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import type { Session } from "next-auth";
-import { signOut } from "next-auth/react";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
-import { personalSpaceConfig } from "@/spaces";
 import { Calculator, FileText, Home, Inbox, Settings, Users } from "lucide-react";
 import { AppHeader } from "./app-header";
 
@@ -34,16 +33,22 @@ export function AppShell({
   children: ReactNode;
 }) {
   const pathname = usePathname();
-  const router = useRouter();
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-cloud-100">
       {/* Left Sidebar */}
-      <aside className="w-64 border-r border-gray-200 bg-white">
-        <div className="flex h-16 items-center border-b border-gray-200 px-6">
+      <aside className="w-64 border-r border-slate-200 bg-white">
+        <div className="flex h-16 items-center gap-3 border-b border-slate-200 px-6">
+          <Image
+            src="/logo/bizflow-mark.svg"
+            alt="Bizflow"
+            width={32}
+            height={32}
+            className="shrink-0"
+          />
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Bizflow</h1>
-            <p className="text-xs text-gray-500">Personal</p>
+            <h1 className="heading-2 text-base text-ink-900">Bizflow</h1>
+            <p className="text-xs text-slate-600">Personal</p>
           </div>
         </div>
         <nav className="space-y-1 p-3">
@@ -55,13 +60,13 @@ export function AppShell({
                 key={item.name}
                 href={item.href}
                 className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                  "flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-all duration-200",
                   isActive
-                    ? "bg-blue-50 text-blue-700"
-                    : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                    ? "bg-primary-50 text-primary-700 shadow-sm"
+                    : "text-slate-700 hover:bg-cloud-100 hover:text-ink-900"
                 )}
               >
-                <item.icon className="h-4 w-4" />
+                <item.icon className="h-4 w-4" strokeWidth={2} />
                 {item.name}
               </Link>
             );
@@ -81,16 +86,16 @@ export function AppShell({
       </div>
 
       {/* Right Sidebar Placeholder for Copilot */}
-      <aside className="w-80 border-l border-gray-200 bg-white">
-        <div className="flex h-16 items-center justify-center border-b border-gray-200">
-          <h3 className="text-sm font-medium text-gray-900">Copilot Panel</h3>
+      <aside className="w-80 border-l border-slate-200 bg-white">
+        <div className="flex h-16 items-center justify-center border-b border-slate-200">
+          <h3 className="text-sm font-medium text-ink-900">Copilot Panel</h3>
         </div>
         <div className="flex h-full items-center justify-center p-6">
           <div className="text-center">
-            <div className="mx-auto h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center">
+            <div className="mx-auto h-12 w-12 rounded-full bg-cloud-100 flex items-center justify-center">
               <span className="text-2xl">🤖</span>
             </div>
-            <p className="mt-2 text-sm text-gray-500">Copilot panel coming soon</p>
+            <p className="mt-2 text-sm text-slate-600">Copilot panel coming soon</p>
           </div>
         </div>
       </aside>

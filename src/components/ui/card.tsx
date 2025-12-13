@@ -6,13 +6,13 @@ import { cn } from "@/lib/utils";
 const cardVariants = cva("rounded-2xl border text-card-foreground transition-all duration-200", {
   variants: {
     variant: {
-      default: "bg-card border-border/50 shadow-sm",
-      elevated: "bg-card border-border/30 shadow-md hover:shadow-lg",
+      default: "bg-card border-border/50 shadow-brand",
+      elevated: "bg-card border-border/30 shadow-brand hover:shadow-lg",
       subtle: "bg-muted/30 border-transparent",
       interactive:
-        "bg-card border-border/50 shadow-sm hover:shadow-md hover:border-primary/20 cursor-pointer",
-      status: "bg-card border-l-4 shadow-sm",
-      glass: "bg-card/80 backdrop-blur-xl border-border/30 shadow-lg",
+        "bg-card border-border/50 shadow-brand hover:shadow-lg hover:border-primary/20 cursor-pointer",
+      status: "bg-card border-l-4 shadow-brand",
+      glass: "bg-card/80 backdrop-blur-xl border-border/30 shadow-brand",
     },
   },
   defaultVariants: {

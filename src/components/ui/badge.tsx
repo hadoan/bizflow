@@ -9,14 +9,19 @@ const badgeVariants = cva(
     variants: {
       variant: {
         default: "border-transparent bg-primary text-primary-foreground",
-        secondary: "border-transparent bg-secondary text-secondary-foreground",
+        secondary: "border-transparent bg-muted text-muted-foreground",
         destructive: "border-transparent bg-destructive text-destructive-foreground",
         outline: "text-foreground border-border",
-        success: "border-transparent bg-success-muted text-success",
-        warning: "border-transparent bg-warning-muted text-warning",
-        info: "border-transparent bg-info-muted text-info",
+        success: "border-transparent bg-success-100 text-success-700",
+        warning: "border-transparent bg-warning-100 text-warning-800",
+        danger: "border-transparent bg-danger-100 text-danger-700",
         muted: "border-transparent bg-muted text-muted-foreground",
         accent: "border-transparent bg-accent text-accent-foreground",
+        // Module color variants
+        finance: "border-transparent bg-primary-100 text-primary-700",
+        crm: "border-transparent bg-success-100 text-success-700",
+        tasks: "border-transparent bg-warning-100 text-warning-800",
+        operations: "border-transparent bg-danger-100 text-danger-700",
       },
     },
     defaultVariants: {
