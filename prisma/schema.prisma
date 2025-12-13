@@ -101,6 +101,7 @@ model Space {
   inboxItems  InboxItem[]
   tasks       Task[]
   files       File[]
+  businessIdentities BusinessIdentity[]
 
   @@map("spaces")
 }
@@ -356,4 +357,34 @@ model File {
   receipts Receipt[]
 
   @@map("files")
+}
+
+// ============================================================================
+// BUSINESS IDENTITY
+// ============================================================================
+
+model BusinessIdentity {
+  id                String   @id @default(cuid())
+  spaceId           String
+  legalName         String
+  tradeName         String?
+  addressStreet     String?
+  addressZip        String?
+  addressCity       String?
+  addressCountry    String?
+  vatId             String?
+  taxNumber         String?
+  contactEmail      String?
+  contactPhone      String?
+  contactWebsite    String?
+  logoUrl           String?
+  paymentInstructions String?
+  isDefault         Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  space Space @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+
+  @@index([spaceId, isDefault], map: "business_identity_space_default_idx")
+  @@map("business_identities")
 }
