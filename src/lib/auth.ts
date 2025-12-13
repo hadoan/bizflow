@@ -27,7 +27,7 @@ export const authOptions: NextAuthConfig = {
         const password = credentials?.password as string | undefined;
 
         if (!email || !password) {
-          throw new Error("Email and password required");
+          return null;
         }
 
         const user = await db.user.findUnique({
@@ -35,13 +35,13 @@ export const authOptions: NextAuthConfig = {
         });
 
         if (!user || !user.password) {
-          throw new Error("Invalid email or password");
+          return null;
         }
 
         const isPasswordValid = await compare(password, user.password);
 
         if (!isPasswordValid) {
-          throw new Error("Invalid email or password");
+          return null;
         }
 
         return {

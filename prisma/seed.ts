@@ -3,8 +3,8 @@ import path from "path";
 import { PrismaClient } from "@prisma/client";
 import { hash } from "bcryptjs";
 
-// Load environment variables from .env.local
-dotenv.config({ path: path.resolve(process.cwd(), ".env.local") });
+// Load environment variables from .env
+dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 
 const prisma = new PrismaClient();
 

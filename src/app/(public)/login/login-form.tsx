@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -15,8 +15,26 @@ import { AlertCircle } from "lucide-react";
 
 export function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const getErrorMessage = (code?: string | null) => {
+    if (!code) return "An error occurred. Please try again.";
+
+    if (code === "CredentialsSignin" || code === "CallbackRouteError") {
+      return "Invalid email or password";
+    }
+
+    return "An error occurred. Please try again.";
+  };
+
+  useEffect(() => {
+    const errorCode = searchParams.get("error");
+    if (errorCode) {
+      setError(getErrorMessage(errorCode));
+    }
+  }, [searchParams]);
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -34,9 +52,13 @@ export function LoginForm() {
         redirect: false,
       });
 
-      if (result?.error) {
-        setError("Invalid email or password");
-        setIsLoading(false);
+      if (!result || result.error) {
+        setError(getErrorMessage(result?.error ?? undefined));
+        return;
+      }
+
+      if (result.status && result.status >= 400) {
+        setError("Unable to sign in. Please try again.");
         return;
       }
 
@@ -45,6 +67,7 @@ export function LoginForm() {
       router.refresh();
     } catch (_error) {
       setError("An error occurred. Please try again.");
+    } finally {
       setIsLoading(false);
     }
   }
