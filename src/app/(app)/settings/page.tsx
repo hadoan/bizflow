@@ -81,6 +81,7 @@ export default function SettingsPage() {
     timezone: "Europe/Berlin",
     locale: "de-DE",
   });
+  const [initialWorkspaceLoaded, setInitialWorkspaceLoaded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<WorkspaceResponse | null>(null);
@@ -124,7 +125,40 @@ export default function SettingsPage() {
         // silent
       }
     };
+    const loadWorkspace = async () => {
+      try {
+        const res = await fetch("/api/workspaces");
+        if (!res.ok) return;
+        const data = await res.json();
+        const active =
+          data.workspaces?.find((w: any) => w.id === data.defaultSpaceId) ?? data.workspaces?.[0];
+        if (active) {
+          setForm({
+            name: active.name ?? "",
+            currency: active.currency ?? "EUR",
+            timezone: active.timezone ?? "UTC",
+            locale: active.locale ?? "en-US",
+          });
+          setResult({
+            workspace: {
+              id: active.id,
+              name: active.name,
+              slug: active.slug,
+              currency: active.currency,
+              timezone: active.timezone,
+              locale: active.locale,
+            },
+            gettingStarted: [],
+          });
+        }
+      } catch {
+        // ignore, allow manual entry
+      } finally {
+        setInitialWorkspaceLoaded(true);
+      }
+    };
     loadIdentity();
+    loadWorkspace();
   }, []);
 
   const sortedChecklist = useMemo(() => {
@@ -367,9 +401,13 @@ export default function SettingsPage() {
                 </div>
               )}
 
-              <Button type="submit" className="w-full md:w-auto" disabled={loading}>
+              <Button
+                type="submit"
+                className="w-full md:w-auto"
+                disabled={loading || !initialWorkspaceLoaded}
+              >
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Create workspace
+                {result?.workspace ? "Update workspace" : "Create workspace"}
               </Button>
             </form>
           </CardContent>

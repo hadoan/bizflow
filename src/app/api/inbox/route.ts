@@ -12,6 +12,9 @@ export async function GET(_req: NextRequest) {
   } catch (error) {
     console.error("List inbox items error:", error);
     const message = error instanceof Error ? error.message : "Failed to fetch inbox items";
+    if (message === "No space found for user") {
+      return NextResponse.json([]);
+    }
     const status = message === "Unauthorized" ? 401 : 500;
     return NextResponse.json({ error: message }, { status });
   }

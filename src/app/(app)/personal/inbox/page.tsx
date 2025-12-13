@@ -63,12 +63,16 @@ export default function InboxPage() {
     const load = async () => {
       try {
         const res = await fetch("/api/inbox");
-        if (!res.ok) throw new Error("Failed to load inbox");
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error(body?.error || "Failed to load inbox");
+        }
         const data = (await res.json()) as InboxItemWithMeta[];
         setItems(data);
       } catch (err) {
         console.error(err);
-        setError("Could not load inbox items");
+        const message = err instanceof Error ? err.message : "Could not load inbox items";
+        setError(message);
       } finally {
         setLoading(false);
       }

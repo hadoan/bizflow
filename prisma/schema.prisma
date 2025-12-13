@@ -19,11 +19,13 @@ model User {
   email     String   @unique
   name      String?
   password  String?
+  defaultSpaceId String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   memberships SpaceMembership[]
   ownedSpaces Space[]          @relation("SpaceOwner")
+  defaultSpace Space? @relation("UserDefaultSpace", fields: [defaultSpaceId], references: [id])
   accounts    Account[]
   sessions    Session[]
 
@@ -92,6 +94,7 @@ model Space {
   updatedAt DateTime  @updatedAt
 
   owner User @relation("SpaceOwner", fields: [ownerUserId], references: [id], onDelete: Cascade)
+  preferredByUsers User[] @relation("UserDefaultSpace")
   memberships SpaceMembership[]
   clients     Client[]
   invoices    Invoice[]

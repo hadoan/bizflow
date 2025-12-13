@@ -103,8 +103,23 @@ export async function getUserSpaces(userId: string) {
   return memberships.map((m) => m.space);
 }
 
-export async function getDefaultSpace(userId: string) {
+export async function getDefaultSpace(userId: string, preferredSpaceId?: string | null) {
   const spaces = await getUserSpaces(userId);
+  if (preferredSpaceId) {
+    const match = spaces.find((s) => s.id === preferredSpaceId);
+    if (match) return match;
+  }
+
+  const user = await db.user.findUnique({
+    where: { id: userId },
+    select: { defaultSpaceId: true },
+  });
+
+  if (user?.defaultSpaceId) {
+    const match = spaces.find((s) => s.id === user.defaultSpaceId);
+    if (match) return match;
+  }
+
   return spaces[0] ?? null;
 }
 

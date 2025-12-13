@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth, getUserSpaces } from "@/lib/auth";
 import { createWorkspace } from "@/modules/workspaces/services";
+import { db } from "@/lib/db";
 
 export async function GET() {
   try {
@@ -10,7 +11,11 @@ export async function GET() {
     }
 
     const workspaces = await getUserSpaces(user.id);
-    return NextResponse.json(workspaces);
+    const userRecord = await db.user.findUnique({
+      where: { id: user.id },
+      select: { defaultSpaceId: true },
+    });
+    return NextResponse.json({ workspaces, defaultSpaceId: userRecord?.defaultSpaceId });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to fetch workspaces";
     const status = message === "Unauthorized" ? 401 : 500;

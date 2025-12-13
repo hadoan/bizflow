@@ -9,6 +9,18 @@ import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { Calculator, FileText, Home, Inbox, Settings, Users } from "lucide-react";
 import { AppHeader } from "./app-header";
+import { useEffect, useState } from "react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { ChevronsUpDown } from "lucide-react";
 
 type NavItem = {
   name: string;
@@ -33,11 +45,49 @@ export function AppShell({
   children: ReactNode;
 }) {
   const pathname = usePathname();
+  const [spaces, setSpaces] = useState<Array<{ id: string; name: string; slug: string }>>([]);
+  const [activeSpace, setActiveSpace] = useState<string | null>(null);
+  const [selecting, setSelecting] = useState(false);
+
+  useEffect(() => {
+    const fetchSpaces = async () => {
+      try {
+        const res = await fetch("/api/workspaces");
+        if (!res.ok) return;
+        const data = await res.json();
+        setSpaces(data.workspaces ?? []);
+        const active = data.defaultSpaceId || data.workspaces?.[0]?.id || null;
+        setActiveSpace(active);
+      } catch (err) {
+        console.error("Failed to load spaces", err);
+      }
+    };
+    fetchSpaces();
+  }, []);
+
+  const handleSelectSpace = async (spaceId: string) => {
+    setSelecting(true);
+    try {
+      const res = await fetch("/api/workspaces/select", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ spaceId }),
+      });
+      if (res.ok) {
+        setActiveSpace(spaceId);
+        window.location.reload();
+      }
+    } catch (err) {
+      console.error("Failed to switch space", err);
+    } finally {
+      setSelecting(false);
+    }
+  };
 
   return (
     <div className="flex min-h-screen bg-cloud-100">
       {/* Left Sidebar */}
-      <aside className="w-64 border-r border-slate-200 bg-white">
+      <aside className="w-64 border-r border-slate-200 bg-white flex flex-col">
         <div className="flex h-16 items-center gap-3 border-b border-slate-200 px-6">
           <Image
             src="/logo/bizflow-mark.svg"
@@ -72,6 +122,68 @@ export function AppShell({
             );
           })}
         </nav>
+        <div className="mt-auto border-t border-slate-200 p-3">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                className="w-full justify-between rounded-xl border-slate-300"
+                disabled={spaces.length === 0}
+              >
+                <div className="flex items-center gap-2">
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback>
+                      {(spaces.find((s) => s.id === activeSpace)?.name || "WS")
+                        .slice(0, 2)
+                        .toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex flex-col text-left">
+                    <span className="text-sm font-semibold text-ink-900">
+                      {spaces.find((s) => s.id === activeSpace)?.name || "Select workspace"}
+                    </span>
+                    <span className="text-xs text-slate-600">{session.user?.email}</span>
+                  </div>
+                </div>
+                <ChevronsUpDown className="h-4 w-4 text-slate-500" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" side="top" className="w-64">
+              <DropdownMenuLabel className="text-xs text-slate-500">Business</DropdownMenuLabel>
+              <DropdownMenuItem asChild>
+                <Link href="/settings">Business details</Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel className="text-xs text-slate-500">Your spaces</DropdownMenuLabel>
+              {spaces.map((space) => (
+                <DropdownMenuItem
+                  key={space.id}
+                  onClick={() => handleSelectSpace(space.id)}
+                  className={cn("flex items-center gap-2", {
+                    "bg-primary-50 text-primary-700": space.id === activeSpace,
+                  })}
+                >
+                  <Avatar className="h-6 w-6">
+                    <AvatarFallback>{space.name.slice(0, 2).toUpperCase()}</AvatarFallback>
+                  </Avatar>
+                  <span className="text-sm">{space.name}</span>
+                  {selecting && space.id === activeSpace && (
+                    <span className="ml-auto text-xs text-slate-500">Switching...</span>
+                  )}
+                </DropdownMenuItem>
+              ))}
+              {spaces.length === 0 && (
+                <DropdownMenuItem disabled className="text-xs text-slate-500">
+                  No workspaces yet
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link href="/api/auth/signout">Sign out</Link>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </aside>
 
       {/* Main Content Area */}
@@ -84,21 +196,6 @@ export function AppShell({
           <div className="p-6">{children}</div>
         </main>
       </div>
-
-      {/* Right Sidebar Placeholder for Copilot */}
-      <aside className="w-80 border-l border-slate-200 bg-white">
-        <div className="flex h-16 items-center justify-center border-b border-slate-200">
-          <h3 className="text-sm font-medium text-ink-900">Copilot Panel</h3>
-        </div>
-        <div className="flex h-full items-center justify-center p-6">
-          <div className="text-center">
-            <div className="mx-auto h-12 w-12 rounded-full bg-cloud-100 flex items-center justify-center">
-              <span className="text-2xl">🤖</span>
-            </div>
-            <p className="mt-2 text-sm text-slate-600">Copilot panel coming soon</p>
-          </div>
-        </div>
-      </aside>
     </div>
   );
 }
