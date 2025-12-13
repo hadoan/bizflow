@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Loader2, Plus, RefreshCw } from "lucide-react";
 import { cn, formatCurrency } from "@/lib/utils";
 
@@ -53,6 +54,9 @@ export default function ExpensesPage() {
   const [listLoading, setListLoading] = useState(true);
   const [listError, setListError] = useState<string | null>(null);
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [selected, setSelected] = useState<Expense | null>(null);
+  const [newOpen, setNewOpen] = useState(false);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   const categories = useMemo(() => {
     const set = new Set<string>();
@@ -123,6 +127,7 @@ export default function ExpensesPage() {
       setSaveSuccess("Expense saved");
       setForm(defaultForm);
       fetchExpenses();
+      setNewOpen(false);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to create expense";
       setSaveError(message);
@@ -140,19 +145,152 @@ export default function ExpensesPage() {
           <h1 className="text-3xl font-bold text-gray-900">Expenses</h1>
           <p className="mt-2 text-gray-600">Log costs to track profitability and deductions.</p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => fetchExpenses()} disabled={listLoading}>
-          <RefreshCw className={cn("mr-2 h-4 w-4", listLoading && "animate-spin")} />
-          Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => fetchExpenses()} disabled={listLoading}>
+            <RefreshCw className={cn("mr-2 h-4 w-4", listLoading && "animate-spin")} />
+            Refresh
+          </Button>
+          <Button size="sm" onClick={() => setNewOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            New expense
+          </Button>
+        </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[1.1fr_1fr]">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg text-ink-900">New expense</CardTitle>
-            <CardDescription>Add vendor, amount, tax, and mark billable if needed.</CardDescription>
-          </CardHeader>
-          <CardContent>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg text-ink-900">Expenses</CardTitle>
+          <CardDescription>Click an expense to view details.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="space-y-1">
+              <Label>Category</Label>
+              <select
+                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm min-w-[160px]"
+                value={filters.category ?? ""}
+                onChange={(e) => {
+                  const next = { ...filters, category: e.target.value || undefined };
+                  setFilters(next);
+                  fetchExpenses(next);
+                }}
+              >
+                <option value="">All</option>
+                {categories.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-1">
+              <Label>Project</Label>
+              <select
+                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm min-w-[160px]"
+                value={filters.project ?? ""}
+                onChange={(e) => {
+                  const next = { ...filters, project: e.target.value || undefined };
+                  setFilters(next);
+                  fetchExpenses(next);
+                }}
+              >
+                <option value="">All</option>
+                {projectLinks.map((p) => (
+                  <option key={p} value={p}>
+                    {p}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-1">
+              <Label>From</Label>
+              <Input
+                type="date"
+                value={filters.from ?? ""}
+                onChange={(e) => {
+                  const next = { ...filters, from: e.target.value || undefined };
+                  setFilters(next);
+                  fetchExpenses(next);
+                }}
+                className="min-w-[160px]"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>To</Label>
+              <Input
+                type="date"
+                value={filters.to ?? ""}
+                onChange={(e) => {
+                  const next = { ...filters, to: e.target.value || undefined };
+                  setFilters(next);
+                  fetchExpenses(next);
+                }}
+                className="min-w-[160px]"
+              />
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => { setFilters({}); fetchExpenses({}); }}>
+              Clear
+            </Button>
+          </div>
+
+          {listLoading ? (
+            <div className="flex items-center justify-center gap-2 text-gray-500">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Loading expenses…
+            </div>
+          ) : listError ? (
+            <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              {listError}
+            </div>
+          ) : filteredList.length === 0 ? (
+            <p className="text-sm text-slate-600">No expenses found.</p>
+          ) : (
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+              {filteredList.map((exp) => (
+                <button
+                  key={exp.id}
+                  onClick={() => {
+                    setSelected(exp);
+                    setDetailOpen(true);
+                  }}
+                  className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-white p-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-primary-200 hover:shadow"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold text-ink-900">{exp.vendor}</span>
+                      <span className="rounded-full bg-cloud-100 px-2 py-0.5 text-xs text-slate-700">
+                        {exp.category}
+                      </span>
+                    </div>
+                    <span className="text-sm font-semibold text-ink-900">
+                      {formatCurrency(exp.amount.toNumber ? exp.amount.toNumber() : exp.amount, exp.currency)}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600">
+                    <span>{new Date(exp.date).toLocaleDateString()}</span>
+                    {exp.projectLink && (
+                      <>
+                        <span>&middot;</span>
+                        <span>{exp.projectLink}</span>
+                      </>
+                    )}
+                    {exp.billable && <span className="rounded bg-primary-50 px-1.5 py-0.5 text-primary-700">Billable</span>}
+                  </div>
+                  {exp.notes && <p className="text-xs text-slate-600 line-clamp-2">{exp.notes}</p>}
+                </button>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* New expense sheet */}
+      <Sheet open={newOpen} onOpenChange={setNewOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-xl overflow-auto">
+          <SheetHeader>
+            <SheetTitle>New expense</SheetTitle>
+          </SheetHeader>
+          <div className="mt-4">
             <form className="space-y-4" onSubmit={handleSubmit}>
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
@@ -276,150 +414,53 @@ export default function ExpensesPage() {
                 </div>
               )}
 
-              <Button type="submit" disabled={loading}>
+              <Button type="submit" disabled={loading} className="w-full">
                 {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
                 Save expense
               </Button>
             </form>
-          </CardContent>
-        </Card>
+          </div>
+        </SheetContent>
+      </Sheet>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg text-ink-900">Expenses</CardTitle>
-            <CardDescription>Filter by category, project, and date.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-3 md:grid-cols-2">
-              <div className="space-y-1">
-                <Label>Category</Label>
-                <select
-                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
-                  value={filters.category ?? ""}
-                  onChange={(e) => {
-                    const next = { ...filters, category: e.target.value || undefined };
-                    setFilters(next);
-                    fetchExpenses(next);
-                  }}
-                >
-                  <option value="">All</option>
-                  {categories.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
+      {/* Detail sheet */}
+      <Sheet open={detailOpen} onOpenChange={setDetailOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-md overflow-auto">
+          <SheetHeader>
+            <SheetTitle>{selected?.vendor ?? "Expense"}</SheetTitle>
+          </SheetHeader>
+          {selected && (
+            <div className="mt-4 space-y-3 text-sm text-ink-900">
+              <div className="flex items-center justify-between">
+                <span className="font-semibold">{selected.category}</span>
+                <span className="text-base font-bold">
+                  {formatCurrency(
+                    selected.amount.toNumber ? selected.amount.toNumber() : selected.amount,
+                    selected.currency
+                  )}
+                </span>
               </div>
-              <div className="space-y-1">
-                <Label>Project</Label>
-                <select
-                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
-                  value={filters.project ?? ""}
-                  onChange={(e) => {
-                    const next = { ...filters, project: e.target.value || undefined };
-                    setFilters(next);
-                    fetchExpenses(next);
-                  }}
-                >
-                  <option value="">All</option>
-                  {projectLinks.map((p) => (
-                    <option key={p} value={p}>
-                      {p}
-                    </option>
-                  ))}
-                </select>
+              <div className="space-y-1 text-slate-700">
+                <p>Date: {new Date(selected.date).toLocaleDateString()}</p>
+                {selected.projectLink && <p>Project: {selected.projectLink}</p>}
+                {selected.billable && <p>Billable to client</p>}
+                {selected.taxAmount && <p>Tax: {selected.taxAmount}</p>}
+                {selected.fxRate && selected.currency !== selected.baseCurrency && (
+                  <p>
+                    Base:{" "}
+                    {formatCurrency(
+                      selected.baseAmount.toNumber ? selected.baseAmount.toNumber() : selected.baseAmount,
+                      selected.baseCurrency
+                    )}{" "}
+                    @ {selected.fxRate}
+                  </p>
+                )}
+                {selected.notes && <p>Notes: {selected.notes}</p>}
               </div>
             </div>
-            <div className="grid gap-3 md:grid-cols-2">
-              <div className="space-y-1">
-                <Label>From</Label>
-                <Input
-                  type="date"
-                  value={filters.from ?? ""}
-                  onChange={(e) => {
-                    const next = { ...filters, from: e.target.value || undefined };
-                    setFilters(next);
-                    fetchExpenses(next);
-                  }}
-                />
-              </div>
-              <div className="space-y-1">
-                <Label>To</Label>
-                <Input
-                  type="date"
-                  value={filters.to ?? ""}
-                  onChange={(e) => {
-                    const next = { ...filters, to: e.target.value || undefined };
-                    setFilters(next);
-                    fetchExpenses(next);
-                  }}
-                />
-              </div>
-            </div>
-
-            {listLoading ? (
-              <div className="flex items-center justify-center gap-2 text-gray-500">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Loading expenses…
-              </div>
-            ) : listError ? (
-              <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-                {listError}
-              </div>
-            ) : filteredList.length === 0 ? (
-              <p className="text-sm text-slate-600">No expenses found.</p>
-            ) : (
-              <div className="space-y-3">
-                {filteredList.map((exp) => (
-                  <div
-                    key={exp.id}
-                    className="flex flex-col gap-1 rounded-xl border border-slate-200 bg-white p-3 shadow-sm"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-ink-900">{exp.vendor}</span>
-                        <span className="rounded-full bg-cloud-100 px-2 py-0.5 text-xs text-slate-700">
-                          {exp.category}
-                        </span>
-                        {exp.billable && (
-                          <span className="rounded-full bg-primary-50 px-2 py-0.5 text-xs text-primary-700">
-                            Billable
-                          </span>
-                        )}
-                      </div>
-                      <span className="text-sm font-semibold text-ink-900">
-                        {formatCurrency(exp.amount.toNumber ? exp.amount.toNumber() : exp.amount, exp.currency)}
-                        {exp.fxRate && exp.currency !== exp.baseCurrency
-                          ? ` · ${formatCurrency(
-                              exp.baseAmount.toNumber ? exp.baseAmount.toNumber() : exp.baseAmount,
-                              exp.baseCurrency
-                            )} @ ${exp.fxRate}`
-                          : ""}
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600">
-                      <span>{new Date(exp.date).toLocaleDateString()}</span>
-                      {exp.projectLink && (
-                        <>
-                          <span>&middot;</span>
-                          <span>{exp.projectLink}</span>
-                        </>
-                      )}
-                      {exp.taxAmount && (
-                        <>
-                          <span>&middot;</span>
-                          <span>Tax {exp.taxAmount}</span>
-                        </>
-                      )}
-                    </div>
-                    {exp.notes && <p className="text-xs text-slate-600">{exp.notes}</p>}
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
