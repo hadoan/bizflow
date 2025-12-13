@@ -29,10 +29,19 @@ async function main() {
   // Create demo space
   const space = await prisma.space.upsert({
     where: { slug: "demo-personal" },
-    update: {},
+    update: {
+      ownerUserId: user.id,
+      currency: "EUR",
+      timezone: "Europe/Berlin",
+      locale: "de-DE",
+    },
     create: {
       name: "Demo Personal Business",
       slug: "demo-personal",
+      ownerUserId: user.id,
+      currency: "EUR",
+      timezone: "Europe/Berlin",
+      locale: "de-DE",
       spaceType: "PERSONAL",
       country: "DE",
     },

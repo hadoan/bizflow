@@ -70,7 +70,10 @@ export async function POST(req: NextRequest) {
     // Validate request body with Zod schema
     const validatedData = createInvoiceSchema.parse(body);
 
-    const invoice = await createInvoice(space.id, validatedData);
+    const invoice = await createInvoice(space.id, {
+      ...validatedData,
+      currency: validatedData.currency ?? space.currency,
+    });
 
     return NextResponse.json(invoice, { status: 201 });
   } catch (error) {

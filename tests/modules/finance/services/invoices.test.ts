@@ -14,6 +14,10 @@ import { InvoiceStatus } from "@prisma/client";
 // Mock dependencies
 vi.mock("@/lib/db", () => ({
   db: {
+    space: {
+      findUnique: vi.fn(),
+      updateMany: vi.fn(),
+    },
     client: {
       findFirst: vi.fn(),
     },
@@ -24,6 +28,7 @@ vi.mock("@/lib/db", () => ({
       update: vi.fn(),
       delete: vi.fn(),
     },
+    $transaction: vi.fn(),
   },
 }));
 
@@ -34,6 +39,13 @@ vi.mock("@/modules/kernel/workflows", () => ({
 describe("Invoice Services", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    (db.space.findUnique as any).mockResolvedValue({
+      id: "space-1",
+      currency: "EUR",
+      currencyLockedAt: null,
+    });
+    (db.space.updateMany as any).mockResolvedValue({ count: 1 });
+    (db.$transaction as any).mockImplementation(async (actions: any[]) => Promise.all(actions));
   });
 
   describe("createInvoice", () => {

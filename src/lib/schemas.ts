@@ -15,7 +15,7 @@ export const createInvoiceSchema = z.object({
   number: z.string().min(1, "Invoice number is required"),
   issueDate: z.string().transform((str) => new Date(str)),
   dueDate: z.string().transform((str) => new Date(str)),
-  currency: z.string().optional().default("EUR"),
+  currency: z.string().optional(),
   lineItems: z.array(createInvoiceLineItemSchema).min(1, "At least one line item is required"),
 });
 

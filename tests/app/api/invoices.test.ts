@@ -36,7 +36,7 @@ describe("Invoices API", () => {
 
   describe("GET /api/invoices", () => {
     it("should return invoices with filters", async () => {
-      const mockSpace = { id: "space-123" };
+      const mockSpace = { id: "space-123", currency: "EUR" };
       const mockInvoices = [
         { id: "inv-1", number: "2025-001", status: "PAID" },
         { id: "inv-2", number: "2025-002", status: "DRAFT" },
@@ -61,7 +61,7 @@ describe("Invoices API", () => {
     });
 
     it("should handle year-only period filter", async () => {
-      const mockSpace = { id: "space-123" };
+      const mockSpace = { id: "space-123", currency: "EUR" };
       const mockInvoices = [{ id: "inv-1", number: "2025-001" }];
 
       (getCurrentUserWithSpace as any).mockResolvedValue({ space: mockSpace });
@@ -92,7 +92,7 @@ describe("Invoices API", () => {
 
   describe("POST /api/invoices", () => {
     it("should create an invoice with valid data", async () => {
-      const mockSpace = { id: "space-123" };
+      const mockSpace = { id: "space-123", currency: "EUR" };
       const mockInvoice = {
         id: "inv-123",
         number: "2025-005",
@@ -148,7 +148,7 @@ describe("Invoices API", () => {
     });
 
     it("should handle validation errors", async () => {
-      const mockSpace = { id: "space-123" };
+      const mockSpace = { id: "space-123", currency: "EUR" };
 
       (getCurrentUserWithSpace as any).mockResolvedValue({ space: mockSpace });
 
@@ -171,7 +171,7 @@ describe("Invoices API", () => {
     });
 
     it("should handle service errors", async () => {
-      const mockSpace = { id: "space-123" };
+      const mockSpace = { id: "space-123", currency: "EUR" };
 
       (getCurrentUserWithSpace as any).mockResolvedValue({ space: mockSpace });
       (createInvoice as any).mockRejectedValue(new Error("Client not found"));

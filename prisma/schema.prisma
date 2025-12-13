@@ -23,6 +23,7 @@ model User {
   updatedAt DateTime @updatedAt
 
   memberships SpaceMembership[]
+  ownedSpaces Space[]          @relation("SpaceOwner")
   accounts    Account[]
   sessions    Session[]
 
@@ -80,11 +81,17 @@ model Space {
   id        String    @id @default(cuid())
   name      String
   slug      String    @unique
+  ownerUserId String
+  currency   String   @default("EUR")
+  timezone   String   @default("UTC")
+  locale     String   @default("en-US")
+  currencyLockedAt DateTime?
   spaceType SpaceType @default(PERSONAL)
   country   String    @default("DE")
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
+  owner User @relation("SpaceOwner", fields: [ownerUserId], references: [id], onDelete: Cascade)
   memberships SpaceMembership[]
   clients     Client[]
   invoices    Invoice[]

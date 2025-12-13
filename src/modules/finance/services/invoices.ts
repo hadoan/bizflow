@@ -8,6 +8,19 @@ export async function createInvoice(
   spaceId: string,
   input: CreateInvoiceInput
 ): Promise<InvoiceWithLineItems> {
+  const space = await db.space.findUnique({
+    where: { id: spaceId },
+    select: { currency: true, currencyLockedAt: true },
+  });
+
+  if (!space) {
+    throw new Error("Space not found");
+  }
+
+  if (input.currency && input.currency !== space.currency) {
+    throw new Error(`Workspace currency is locked to ${space.currency}`);
+  }
+
   // Validate that the client exists and belongs to the space
   const client = await db.client.findFirst({
     where: {
@@ -42,26 +55,39 @@ export async function createInvoice(
     };
   });
 
-  const invoice = await db.invoice.create({
-    data: {
-      spaceId,
-      clientId: input.clientId,
-      number: input.number,
-      issueDate: input.issueDate,
-      dueDate: input.dueDate,
-      currency: input.currency ?? "EUR",
-      netAmount: totalNet,
-      vatAmount: totalVat,
-      grossAmount: totalNet + totalVat,
-      status: InvoiceStatus.DRAFT,
-      lineItems: {
-        create: lineItemsData,
+  const now = new Date();
+
+  const [invoice] = await db.$transaction([
+    db.invoice.create({
+      data: {
+        spaceId,
+        clientId: input.clientId,
+        number: input.number,
+        issueDate: input.issueDate,
+        dueDate: input.dueDate,
+        currency: input.currency ?? space.currency,
+        netAmount: totalNet,
+        vatAmount: totalVat,
+        grossAmount: totalNet + totalVat,
+        status: InvoiceStatus.DRAFT,
+        lineItems: {
+          create: lineItemsData,
+        },
       },
-    },
-    include: {
-      lineItems: true,
-    },
-  });
+      include: {
+        lineItems: true,
+      },
+    }),
+    db.space.updateMany({
+      where: {
+        id: spaceId,
+        currencyLockedAt: null,
+      },
+      data: {
+        currencyLockedAt: now,
+      },
+    }),
+  ]);
 
   await emitEvent("invoice.created", spaceId, { invoiceId: invoice.id });
 
