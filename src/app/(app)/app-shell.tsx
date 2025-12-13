@@ -31,6 +31,7 @@ type NavItem = {
 const navigation: NavItem[] = [
   { name: "Home", href: "/dashboard", icon: Home },
   { name: "Inbox", href: "/personal/inbox", icon: Inbox },
+  { name: "Expenses", href: "/personal/expenses", icon: FileText },
   { name: "Documents", href: "/personal/documents", icon: FileText },
   { name: "Clients", href: "/personal/clients", icon: Users },
   { name: "Tax & Reports", href: "/personal/tax", icon: Calculator },

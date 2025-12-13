@@ -406,6 +406,85 @@ async function main() {
 
   console.log(`✓ Created ${createdTasks.length} demo tasks`);
 
+  // Create demo expenses
+  const expenses = [
+    {
+      vendor: "AWS",
+      category: "Cloud services",
+      amount: 119.0,
+      currency: "EUR",
+      baseAmount: 119.0,
+      baseCurrency: "EUR",
+      fxRate: 1,
+      date: new Date("2025-01-10"),
+      taxAmount: 19.0,
+      billable: false,
+      notes: "Monthly AWS bill",
+    },
+    {
+      vendor: "WeWork",
+      category: "Office",
+      amount: 350.0,
+      currency: "EUR",
+      baseAmount: 350.0,
+      baseCurrency: "EUR",
+      fxRate: 1,
+      date: new Date("2025-01-08"),
+      taxAmount: 55.0,
+      billable: false,
+      notes: "Coworking membership",
+    },
+    {
+      vendor: "Figma",
+      category: "Software",
+      amount: 45.0,
+      currency: "USD",
+      baseAmount: 41.0,
+      baseCurrency: "EUR",
+      fxRate: 0.91,
+      date: new Date("2025-01-05"),
+      taxAmount: 0,
+      billable: false,
+      notes: "Design tool subscription",
+    },
+    {
+      vendor: "Travel Hotel",
+      category: "Travel",
+      amount: 220.0,
+      currency: "EUR",
+      baseAmount: 220.0,
+      baseCurrency: "EUR",
+      fxRate: 1,
+      date: new Date("2025-01-15"),
+      taxAmount: 10.0,
+      billable: true,
+      projectLink: "proj-123",
+      notes: "Client onsite stay",
+    },
+  ];
+
+  for (const exp of expenses) {
+    await prisma.expense.create({
+      data: {
+        spaceId: space.id,
+        vendor: exp.vendor,
+        category: exp.category,
+        amount: exp.amount,
+        currency: exp.currency,
+        baseAmount: exp.baseAmount,
+        baseCurrency: exp.baseCurrency,
+        fxRate: exp.fxRate,
+        date: exp.date,
+        taxAmount: exp.taxAmount,
+        projectLink: exp.projectLink,
+        billable: exp.billable,
+        notes: exp.notes,
+      },
+    });
+  }
+
+  console.log(`✓ Created ${expenses.length} demo expenses`);
+
   // Summary
   console.log("\n✨ Database seed completed successfully!");
   console.log("\n📊 Seed Summary:");

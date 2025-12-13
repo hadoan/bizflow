@@ -86,3 +86,5 @@ export interface TaxOverview {
   vatDue: number;
   netProfit: number;
 }
+
+export * from "./expenses";
