@@ -3,11 +3,65 @@ import { calculateVAT, calculateGross } from "@/lib/utils";
 import { emitEvent } from "@/modules/kernel/workflows";
 import type { CreateInvoiceInput, InvoiceWithLineItems, InvoiceFilters } from "../entities";
 import { InvoiceStatus } from "@prisma/client";
+import { getDocumentSettings } from "@/modules/documents/services";
+
+async function generateNextInvoiceNumber(spaceId: string): Promise<string> {
+  const currentYear = new Date().getFullYear();
+  return await db.$transaction(async (tx) => {
+    let settings = await tx.documentSettings.findUnique({ where: { spaceId } });
+    if (!settings) {
+      settings = await tx.documentSettings.create({
+        data: {
+          spaceId,
+          invoicePrefix: "INV-",
+          invoiceNextNumber: 1,
+          invoiceYearlyReset: true,
+          defaultPaymentTerms: 14,
+          defaultLanguage: "en-US",
+        },
+      });
+    }
+
+    let numberToUse = settings.invoiceNextNumber;
+    let lastYear = settings.invoiceLastYear ?? currentYear;
+
+    if (settings.invoiceYearlyReset && lastYear !== currentYear) {
+      numberToUse = 1;
+      lastYear = currentYear;
+      await tx.documentSettings.update({
+        where: { spaceId },
+        data: {
+          invoiceNextNumber: 2,
+          invoiceLastYear: currentYear,
+        },
+      });
+    } else {
+      const updated = await tx.documentSettings.update({
+        where: { spaceId },
+        data: {
+          invoiceNextNumber: {
+            increment: 1,
+          },
+        },
+        select: {
+          invoiceNextNumber: true,
+        },
+      });
+      numberToUse = updated.invoiceNextNumber - 1;
+    }
+
+    const prefix = settings.invoicePrefix;
+    const yearSegment = settings.invoiceYearlyReset ? `${currentYear}-` : "";
+    const padded = numberToUse.toString().padStart(3, "0");
+    return `${prefix}${yearSegment}${padded}`;
+  });
+}
 
 export async function createInvoice(
   spaceId: string,
   input: CreateInvoiceInput
 ): Promise<InvoiceWithLineItems> {
+  const settings = await getDocumentSettings(spaceId);
   const space = await db.space.findUnique({
     where: { id: spaceId },
     select: { currency: true, currencyLockedAt: true },
@@ -57,12 +111,14 @@ export async function createInvoice(
 
   const now = new Date();
 
+  const invoiceNumber = input.number ?? (await generateNextInvoiceNumber(spaceId));
+
   const [invoice] = await db.$transaction([
     db.invoice.create({
       data: {
         spaceId,
         clientId: input.clientId,
-        number: input.number,
+        number: invoiceNumber,
         issueDate: input.issueDate,
         dueDate: input.dueDate,
         currency: input.currency ?? space.currency,

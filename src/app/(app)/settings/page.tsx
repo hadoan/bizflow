@@ -74,6 +74,32 @@ const emptyIdentity: IdentityForm = {
   logoUrl: null,
 };
 
+type DocSettings = {
+  invoicePrefix: string;
+  invoiceNextNumber: number;
+  invoiceYearlyReset: boolean;
+  quotePrefix: string;
+  quoteNextNumber: number;
+  quoteYearlyReset: boolean;
+  defaultPaymentTerms: number;
+  defaultFooter: string;
+  defaultTerms: string;
+  defaultLanguage: string;
+};
+
+const defaultDocSettings: DocSettings = {
+  invoicePrefix: "INV-",
+  invoiceNextNumber: 1,
+  invoiceYearlyReset: true,
+  quotePrefix: "QUO-",
+  quoteNextNumber: 1,
+  quoteYearlyReset: true,
+  defaultPaymentTerms: 14,
+  defaultFooter: "",
+  defaultTerms: "",
+  defaultLanguage: "en-US",
+};
+
 export default function SettingsPage() {
   const [form, setForm] = useState({
     name: "",
@@ -93,6 +119,10 @@ export default function SettingsPage() {
   const [identityWarnings, setIdentityWarnings] = useState<string[]>([]);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [docSettings, setDocSettings] = useState<DocSettings>(defaultDocSettings);
+  const [docSettingsLoading, setDocSettingsLoading] = useState(false);
+  const [docSettingsError, setDocSettingsError] = useState<string | null>(null);
+  const [docSettingsSuccess, setDocSettingsSuccess] = useState<string | null>(null);
 
   useEffect(() => {
     const loadIdentity = async () => {
@@ -157,8 +187,30 @@ export default function SettingsPage() {
         setInitialWorkspaceLoaded(true);
       }
     };
+    const loadDocSettings = async () => {
+      try {
+        const res = await fetch("/api/document-settings");
+        if (!res.ok) return;
+        const data = await res.json();
+        setDocSettings({
+          invoicePrefix: data.invoicePrefix,
+          invoiceNextNumber: data.invoiceNextNumber,
+          invoiceYearlyReset: data.invoiceYearlyReset,
+          quotePrefix: data.quotePrefix,
+          quoteNextNumber: data.quoteNextNumber,
+          quoteYearlyReset: data.quoteYearlyReset,
+          defaultPaymentTerms: data.defaultPaymentTerms,
+          defaultFooter: data.defaultFooter,
+          defaultTerms: data.defaultTerms,
+          defaultLanguage: data.defaultLanguage,
+        });
+      } catch {
+        // ignore load error
+      }
+    };
     loadIdentity();
     loadWorkspace();
+    loadDocSettings();
   }, []);
 
   const sortedChecklist = useMemo(() => {
@@ -199,6 +251,29 @@ export default function SettingsPage() {
 
   const handleIdentityChange = (field: keyof IdentityForm, value: string | boolean | null) => {
     setIdentityForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const saveDocSettings = async () => {
+    setDocSettingsLoading(true);
+    setDocSettingsError(null);
+    setDocSettingsSuccess(null);
+    try {
+      const res = await fetch("/api/document-settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(docSettings),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.error || "Failed to save document settings");
+      }
+      setDocSettingsSuccess("Document settings saved");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to save document settings";
+      setDocSettingsError(message);
+    } finally {
+      setDocSettingsLoading(false);
+    }
   };
 
   const handleLogoChange = (file: File | null) => {
@@ -699,11 +774,11 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
 
-          <Card className="border-slate-200 shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-lg text-ink-900">Invoice preview</CardTitle>
-              <CardDescription>Live view of how your identity appears on invoices/quotes.</CardDescription>
-            </CardHeader>
+        <Card className="border-slate-200 shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-lg text-ink-900">Invoice preview</CardTitle>
+            <CardDescription>Live view of how your identity appears on invoices/quotes.</CardDescription>
+          </CardHeader>
             <CardContent>
               <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm space-y-3">
                 <div className="flex items-start justify-between gap-3">
@@ -754,6 +829,140 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
         </div>
+
+        <Card className="border-slate-200 shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-lg text-ink-900">Document settings</CardTitle>
+            <CardDescription>
+              Configure numbering, default terms, and invoice language.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Invoice prefix</Label>
+                <Input
+                  value={docSettings.invoicePrefix}
+                  onChange={(e) => setDocSettings((p) => ({ ...p, invoicePrefix: e.target.value }))}
+                />
+                <p className="text-xs text-slate-500">Prefix will be followed by year (if reset) and padded number.</p>
+              </div>
+              <div className="space-y-2">
+                <Label>Next invoice number</Label>
+                <Input
+                  type="number"
+                  value={docSettings.invoiceNextNumber}
+                  onChange={(e) =>
+                    setDocSettings((p) => ({ ...p, invoiceNextNumber: parseInt(e.target.value || "1") }))
+                  }
+                />
+              </div>
+            </div>
+            <label className="flex items-center gap-2 text-sm text-ink-900">
+              <input
+                type="checkbox"
+                checked={docSettings.invoiceYearlyReset}
+                onChange={(e) => setDocSettings((p) => ({ ...p, invoiceYearlyReset: e.target.checked }))}
+              />
+              Yearly reset (adds current year into numbering)
+            </label>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Quote prefix</Label>
+                <Input
+                  value={docSettings.quotePrefix}
+                  onChange={(e) => setDocSettings((p) => ({ ...p, quotePrefix: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Next quote number</Label>
+                <Input
+                  type="number"
+                  value={docSettings.quoteNextNumber}
+                  onChange={(e) =>
+                    setDocSettings((p) => ({ ...p, quoteNextNumber: parseInt(e.target.value || "1") }))
+                  }
+                />
+              </div>
+            </div>
+            <label className="flex items-center gap-2 text-sm text-ink-900">
+              <input
+                type="checkbox"
+                checked={docSettings.quoteYearlyReset}
+                onChange={(e) => setDocSettings((p) => ({ ...p, quoteYearlyReset: e.target.checked }))}
+              />
+              Yearly reset quotes
+            </label>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Default payment terms</Label>
+                <select
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-ink-900 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-100"
+                  value={docSettings.defaultPaymentTerms}
+                  onChange={(e) => setDocSettings((p) => ({ ...p, defaultPaymentTerms: parseInt(e.target.value) }))}
+                >
+                  {[7, 14, 30].map((d) => (
+                    <option key={d} value={d}>
+                      Net {d}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label>Default language</Label>
+                <select
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-ink-900 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-100"
+                  value={docSettings.defaultLanguage}
+                  onChange={(e) => setDocSettings((p) => ({ ...p, defaultLanguage: e.target.value }))}
+                >
+                  {["en-US", "en-GB", "de-DE", "fr-FR", "es-ES"].map((lang) => (
+                    <option key={lang} value={lang}>
+                      {lang}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-slate-500">Clients can override language per profile later.</p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Default footer</Label>
+              <textarea
+                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-ink-900 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-100"
+                rows={2}
+                value={docSettings.defaultFooter}
+                onChange={(e) => setDocSettings((p) => ({ ...p, defaultFooter: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Default terms</Label>
+              <textarea
+                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-ink-900 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-100"
+                rows={3}
+                value={docSettings.defaultTerms}
+                onChange={(e) => setDocSettings((p) => ({ ...p, defaultTerms: e.target.value }))}
+              />
+            </div>
+
+            {docSettingsError && (
+              <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                {docSettingsError}
+              </div>
+            )}
+            {docSettingsSuccess && (
+              <div className="rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
+                {docSettingsSuccess}
+              </div>
+            )}
+
+            <Button type="button" onClick={saveDocSettings} disabled={docSettingsLoading}>
+              {docSettingsLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save document settings
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

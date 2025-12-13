@@ -67,6 +67,31 @@ async function main() {
 
   console.log(`✓ Created space membership for ${user.email}`);
 
+  // Set default space for user
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { defaultSpaceId: space.id },
+  });
+
+  // Document settings defaults
+  await prisma.documentSettings.upsert({
+    where: { spaceId: space.id },
+    update: {},
+    create: {
+      spaceId: space.id,
+      invoicePrefix: "INV-",
+      invoiceNextNumber: 1,
+      invoiceYearlyReset: true,
+      quotePrefix: "QUO-",
+      quoteNextNumber: 1,
+      quoteYearlyReset: true,
+      defaultPaymentTerms: 14,
+      defaultFooter: "Thank you for your business.",
+      defaultTerms: "Payment due within 14 days unless otherwise agreed.",
+      defaultLanguage: "en-US",
+    },
+  });
+
   // Create tax configuration
   const taxConfig = await prisma.taxConfig.upsert({
     where: { spaceId: space.id },

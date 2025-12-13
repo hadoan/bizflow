@@ -23,13 +23,14 @@ describe("Workspaces API", () => {
   describe("GET /api/workspaces", () => {
     it("returns the user's workspaces", async () => {
       (requireAuth as any).mockResolvedValue({ id: "user-1" });
-      (getUserSpaces as any).mockResolvedValue([
-        { id: "space-1", name: "Demo", slug: "demo-personal" },
-      ]);
+      (getUserSpaces as any).mockResolvedValue([{ id: "space-1", name: "Demo", slug: "demo-personal" }]);
 
       const response = await GET();
       expect(response.status).toBe(200);
-      expect(await response.json()).toEqual([{ id: "space-1", name: "Demo", slug: "demo-personal" }]);
+      expect(await response.json()).toEqual({
+        workspaces: [{ id: "space-1", name: "Demo", slug: "demo-personal" }],
+        defaultSpaceId: undefined,
+      });
       expect(getUserSpaces).toHaveBeenCalledWith("user-1");
     });
 

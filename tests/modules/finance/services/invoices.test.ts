@@ -14,6 +14,11 @@ import { InvoiceStatus } from "@prisma/client";
 // Mock dependencies
 vi.mock("@/lib/db", () => ({
   db: {
+    documentSettings: {
+      findUnique: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+    },
     space: {
       findUnique: vi.fn(),
       updateMany: vi.fn(),
@@ -39,13 +44,67 @@ vi.mock("@/modules/kernel/workflows", () => ({
 describe("Invoice Services", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    (db.documentSettings.findUnique as any).mockResolvedValue({
+      spaceId: "space-1",
+      invoicePrefix: "INV-",
+      invoiceNextNumber: 1,
+      invoiceYearlyReset: true,
+      invoiceLastYear: null,
+      quotePrefix: "QUO-",
+      quoteNextNumber: 1,
+      quoteYearlyReset: true,
+      quoteLastYear: null,
+      defaultPaymentTerms: 14,
+      defaultFooter: "",
+      defaultTerms: "",
+      defaultLanguage: "en-US",
+    });
+    (db.documentSettings.create as any).mockResolvedValue({
+      spaceId: "space-1",
+      invoicePrefix: "INV-",
+      invoiceNextNumber: 1,
+      invoiceYearlyReset: true,
+      invoiceLastYear: null,
+      quotePrefix: "QUO-",
+      quoteNextNumber: 1,
+      quoteYearlyReset: true,
+      quoteLastYear: null,
+      defaultPaymentTerms: 14,
+      defaultFooter: "",
+      defaultTerms: "",
+      defaultLanguage: "en-US",
+    });
+    (db.documentSettings.update as any).mockImplementation(async ({ data }: any) => ({
+      spaceId: "space-1",
+      invoicePrefix: data.invoicePrefix ?? "INV-",
+      invoiceNextNumber: data.invoiceNextNumber?.increment
+        ? 1 + data.invoiceNextNumber.increment
+        : data.invoiceNextNumber ?? 1,
+      invoiceYearlyReset: data.invoiceYearlyReset ?? true,
+      invoiceLastYear: data.invoiceLastYear ?? null,
+      quotePrefix: data.quotePrefix ?? "QUO-",
+      quoteNextNumber: data.quoteNextNumber ?? 1,
+      quoteYearlyReset: data.quoteYearlyReset ?? true,
+      quoteLastYear: data.quoteLastYear ?? null,
+      defaultPaymentTerms: data.defaultPaymentTerms ?? 14,
+      defaultFooter: data.defaultFooter ?? "",
+      defaultTerms: data.defaultTerms ?? "",
+      defaultLanguage: data.defaultLanguage ?? "en-US",
+    }));
     (db.space.findUnique as any).mockResolvedValue({
       id: "space-1",
       currency: "EUR",
       currencyLockedAt: null,
     });
     (db.space.updateMany as any).mockResolvedValue({ count: 1 });
-    (db.$transaction as any).mockImplementation(async (actions: any[]) => Promise.all(actions));
+    (db.$transaction as any).mockImplementation(async (cb: any) => {
+      if (typeof cb === "function") {
+        return cb(db);
+      }
+      if (Array.isArray(cb)) {
+        return Promise.all(cb);
+      }
+    });
   });
 
   describe("createInvoice", () => {

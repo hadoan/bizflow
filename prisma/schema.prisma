@@ -105,6 +105,7 @@ model Space {
   tasks       Task[]
   files       File[]
   businessIdentities BusinessIdentity[]
+  documentSettings DocumentSettings?
 
   @@map("spaces")
 }
@@ -390,4 +391,27 @@ model BusinessIdentity {
 
   @@index([spaceId, isDefault], map: "business_identity_space_default_idx")
   @@map("business_identities")
+}
+
+model DocumentSettings {
+  id                 String   @id @default(cuid())
+  spaceId            String   @unique
+  invoicePrefix      String   @default("INV-")
+  invoiceNextNumber  Int      @default(1)
+  invoiceYearlyReset Boolean  @default(true)
+  invoiceLastYear    Int?
+  quotePrefix        String   @default("QUO-")
+  quoteNextNumber    Int      @default(1)
+  quoteYearlyReset   Boolean  @default(true)
+  quoteLastYear      Int?
+  defaultPaymentTerms Int     @default(14)
+  defaultFooter      String   @default("")
+  defaultTerms       String   @default("")
+  defaultLanguage    String   @default("en-US")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  space Space @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+
+  @@map("document_settings")
 }
