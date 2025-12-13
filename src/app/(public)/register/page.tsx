@@ -1,104 +1,106 @@
 import Link from "next/link";
+import Image from "next/image";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export default function RegisterPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50">
-      <div className="w-full max-w-md space-y-8 rounded-lg bg-white p-8 shadow-lg">
-        <div>
-          <h2 className="text-center text-3xl font-bold text-gray-900">Create your account</h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
+    <div className="flex min-h-screen items-center justify-center bg-cloud-100">
+      <Card className="w-full max-w-md">
+        <CardHeader className="space-y-3 text-center">
+          <div className="flex justify-center">
+            <Image
+              src="/logo/bizflow-mark.svg"
+              alt="Bizflow"
+              width={48}
+              height={48}
+            />
+          </div>
+          <CardTitle className="heading-2 text-2xl">Create your account</CardTitle>
+          <CardDescription>
             Or{" "}
-            <Link href="/login" className="font-medium text-primary-600 hover:text-primary-500">
+            <Link href="/login" className="font-medium text-primary-600 hover:text-primary-700">
               sign in to your existing account
             </Link>
-          </p>
-        </div>
-        <form className="mt-8 space-y-6">
-          <div className="space-y-4 rounded-md">
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                Full name
-              </label>
-              <input
+          </CardDescription>
+        </CardHeader>
+
+        <CardContent>
+          <form className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Full name</Label>
+              <Input
                 id="name"
                 name="name"
                 type="text"
                 autoComplete="name"
+                placeholder="John Doe"
                 required
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-primary-500"
               />
             </div>
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email address
-              </label>
-              <input
+
+            <div className="space-y-2">
+              <Label htmlFor="email">Email address</Label>
+              <Input
                 id="email"
                 name="email"
                 type="email"
                 autoComplete="email"
+                placeholder="you@example.com"
                 required
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-primary-500"
               />
             </div>
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Password
-              </label>
-              <input
+
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
                 id="password"
                 name="password"
                 type="password"
                 autoComplete="new-password"
+                placeholder="••••••••"
                 required
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-primary-500"
               />
             </div>
-            <div>
-              <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700">
-                Confirm password
-              </label>
-              <input
+
+            <div className="space-y-2">
+              <Label htmlFor="confirm-password">Confirm password</Label>
+              <Input
                 id="confirm-password"
                 name="confirm-password"
                 type="password"
                 autoComplete="new-password"
+                placeholder="••••••••"
                 required
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-primary-500"
               />
             </div>
-          </div>
 
-          <div className="flex items-center">
-            <input
-              id="terms"
-              name="terms"
-              type="checkbox"
-              required
-              className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-            />
-            <label htmlFor="terms" className="ml-2 block text-sm text-gray-900">
-              I agree to the{" "}
-              <a href="#" className="font-medium text-primary-600 hover:text-primary-500">
-                Terms of Service
-              </a>{" "}
-              and{" "}
-              <a href="#" className="font-medium text-primary-600 hover:text-primary-500">
-                Privacy Policy
-              </a>
-            </label>
-          </div>
+            <div className="flex items-start space-x-2 pt-2">
+              <Checkbox id="terms" name="terms" required />
+              <Label
+                htmlFor="terms"
+                className="text-sm font-normal leading-relaxed cursor-pointer"
+              >
+                I agree to the{" "}
+                <Link href="#" className="font-medium text-primary-600 hover:text-primary-700">
+                  Terms of Service
+                </Link>{" "}
+                and{" "}
+                <Link href="#" className="font-medium text-primary-600 hover:text-primary-700">
+                  Privacy Policy
+                </Link>
+              </Label>
+            </div>
 
-          <div>
-            <button
-              type="submit"
-              className="w-full rounded-md bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-            >
+            <Button type="submit" className="w-full h-11">
               Create account
-            </button>
-          </div>
-        </form>
-      </div>
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }
