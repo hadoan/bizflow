@@ -43,7 +43,7 @@ export async function createExpense(spaceId: string, input: CreateExpenseInput) 
 }
 
 export async function listExpenses(spaceId: string, filters?: ExpenseFilters) {
-  const where: any = { spaceId };
+  const where: any = { spaceId, status: "FINAL" }; // Only show finalized expenses
   if (filters?.category) where.category = filters.category;
   if (filters?.projectLink) where.projectLink = filters.projectLink;
   if (filters?.fromDate || filters?.toDate) {

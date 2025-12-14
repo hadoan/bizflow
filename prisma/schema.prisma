@@ -360,6 +360,7 @@ model File {
 
   space    Space     @relation(fields: [spaceId], references: [id], onDelete: Cascade)
   receipts Receipt[]
+  expenses Expense[] @relation("ExpenseFiles")
 
   @@map("files")
 }
@@ -421,27 +422,37 @@ model DocumentSettings {
 // EXPENSES
 // ============================================================================
 
+enum ExpenseStatus {
+  DRAFT
+  FINAL
+}
+
 model Expense {
-  id           String   @id @default(cuid())
+  id           String        @id @default(cuid())
   spaceId      String
   vendor       String
   category     String
-  amount       Decimal  @db.Decimal(12, 2)
-  currency     String   @default("EUR")
-  baseAmount   Decimal  @db.Decimal(12, 2)
-  baseCurrency String   @default("EUR")
-  fxRate       Decimal? @db.Decimal(12, 6)
+  amount       Decimal       @db.Decimal(12, 2)
+  currency     String        @default("EUR")
+  baseAmount   Decimal       @db.Decimal(12, 2)
+  baseCurrency String        @default("EUR")
+  fxRate       Decimal?      @db.Decimal(12, 6)
   date         DateTime
-  taxAmount    Decimal? @db.Decimal(12, 2)
+  taxAmount    Decimal?      @db.Decimal(12, 2)
   projectLink  String?
-  billable     Boolean  @default(false)
+  billable     Boolean       @default(false)
   notes        String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  status       ExpenseStatus @default(FINAL)
+  fileId       String?
+  agentMetadata Json?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
 
   space Space @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  file  File? @relation("ExpenseFiles", fields: [fileId], references: [id])
 
   @@index([spaceId, category], map: "expense_space_category_idx")
   @@index([spaceId, projectLink], map: "expense_space_project_idx")
+  @@index([spaceId, status], map: "expense_space_status_idx")
   @@map("expenses")
 }

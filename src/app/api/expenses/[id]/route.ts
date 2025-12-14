@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUserWithSpace } from "@/lib/auth";
 import { getExpense, updateExpense } from "@/modules/finance/services";
 
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { space } = await getCurrentUserWithSpace();
-    const expense = await getExpense(space.id, params.id);
+    const { id } = await params;
+    const expense = await getExpense(space.id, id);
     if (!expense) return NextResponse.json({ error: "Not found" }, { status: 404 });
     return NextResponse.json(expense);
   } catch (error) {
@@ -16,9 +17,10 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   }
 }
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { space } = await getCurrentUserWithSpace();
+    const { id } = await params;
     const body = await req.json();
 
     const amount =
@@ -32,7 +34,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       return NextResponse.json({ error: "Amount must be a number" }, { status: 400 });
     }
 
-    const expense = await updateExpense(space.id, params.id, {
+    const expense = await updateExpense(space.id, id, {
       vendor: body.vendor,
       category: body.category,
       amount,

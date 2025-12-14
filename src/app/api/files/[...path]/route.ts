@@ -2,11 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { storage } from "@/lib/storage";
 
 export async function GET(
-  _req: NextRequest,
-  { params }: { params: { path: string[] } }
-) {
+  _req: Request,
+  { params }: any
+): Promise<NextResponse> {
   try {
-    const key = params.path.join("/");
+    const segments = Array.isArray(params.path) ? params.path : [params.path];
+    const key = segments.join("/");
     const buffer = await storage.download(key);
     const contentType = key.endsWith(".svg")
       ? "image/svg+xml"
@@ -16,7 +17,8 @@ export async function GET(
           ? "image/jpeg"
           : "application/octet-stream";
 
-    return new NextResponse(buffer, {
+    const body = new Uint8Array(buffer);
+    return new NextResponse(body, {
       status: 200,
       headers: {
         "Content-Type": contentType,

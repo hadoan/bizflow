@@ -37,7 +37,10 @@ class AIClient {
 
   constructor(config?: AIClientConfig) {
     this.provider = config?.provider ?? (process.env.AI_PROVIDER as AIProvider) ?? "openai";
-    this.apiKey = config?.apiKey ?? process.env.AI_API_KEY;
+    // Prefer provider-specific keys, then fall back to generic AI_API_KEY
+    const providerKey =
+      this.provider === "openai" ? process.env.OPENAI_API_KEY : process.env.ANTHROPIC_API_KEY;
+    this.apiKey = config?.apiKey ?? providerKey ?? process.env.AI_API_KEY;
     this.isConfigured = !!this.apiKey;
   }
 
@@ -55,12 +58,25 @@ class AIClient {
       }
       throw new Error(`Unsupported AI provider: ${this.provider}`);
     } catch (error) {
-      console.error("AI completion error:", error);
-      return this.getMockResponse(params);
+      console.error("AI completion error", {
+        provider: this.provider,
+        model: params.model,
+        messageCount: params.messages.length,
+        error,
+      });
+      throw error;
     }
   }
 
   private async completeOpenAI(params: AICompletionParams): Promise<AICompletionResponse> {
+    console.debug("AI request", {
+      provider: "openai",
+      model: params.model ?? "gpt-4o-mini",
+      temperature: params.temperature ?? 0.7,
+      maxTokens: params.maxTokens ?? 1000,
+      messageCount: params.messages.length,
+    });
+
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -76,7 +92,11 @@ class AIClient {
     });
 
     if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.statusText}`);
+      const errorBody = await response.text().catch(() => "");
+      throw new Error(
+        `OpenAI API error ${response.status}: ${response.statusText} ${errorBody ? `- ${errorBody}` : ""
+        }`
+      );
     }
 
     const data = await response.json();
@@ -95,6 +115,24 @@ class AIClient {
     const systemMessage = params.messages.find((m) => m.role === "system");
     const userMessages = params.messages.filter((m) => m.role !== "system");
 
+    // Allow overriding Anthropic model via env; default to broadly available Haiku
+    const model = params.model ?? process.env.ANTHROPIC_MODEL ?? "claude-3-haiku-20240307";
+
+    console.debug("AI request", {
+      provider: "anthropic",
+      model,
+      temperature: params.temperature ?? 0.7,
+      maxTokens: params.maxTokens ?? 1000,
+      systemPresent: !!systemMessage,
+      messageCount: userMessages.length,
+    });
+
+    // Anthropic expects message content as an array of text blocks
+    const anthropicMessages = userMessages.map((message) => ({
+      role: message.role,
+      content: [{ type: "text", text: message.content }],
+    }));
+
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -103,16 +141,20 @@ class AIClient {
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: params.model ?? "claude-3-5-sonnet-20241022",
+        model,
         system: systemMessage?.content,
-        messages: userMessages,
+        messages: anthropicMessages,
         temperature: params.temperature ?? 0.7,
         max_tokens: params.maxTokens ?? 1000,
       }),
     });
 
     if (!response.ok) {
-      throw new Error(`Anthropic API error: ${response.statusText}`);
+      const errorBody = await response.text().catch(() => "");
+      throw new Error(
+        `Anthropic API error ${response.status}: ${response.statusText} ${errorBody ? `- ${errorBody}` : ""
+        }`
+      );
     }
 
     const data = await response.json();

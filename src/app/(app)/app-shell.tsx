@@ -7,7 +7,7 @@ import { usePathname } from "next/navigation";
 import type { Session } from "next-auth";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
-import { Calculator, FileText, Home, Inbox, Settings, Users } from "lucide-react";
+import { Calculator, FileText, Home, Inbox, Settings, Users, Bot } from "lucide-react";
 import { AppHeader } from "./app-header";
 import { useEffect, useState } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -31,6 +31,7 @@ type NavItem = {
 const navigation: NavItem[] = [
   { name: "Home", href: "/dashboard", icon: Home },
   { name: "Inbox", href: "/personal/inbox", icon: Inbox },
+  { name: "Expense Assistant", href: "/personal/expenses/copilot", icon: Bot },
   { name: "Expenses", href: "/personal/expenses", icon: FileText },
   { name: "Documents", href: "/personal/documents", icon: FileText },
   { name: "Clients", href: "/personal/clients", icon: Users },

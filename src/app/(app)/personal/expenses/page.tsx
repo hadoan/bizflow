@@ -7,8 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Plus, RefreshCw } from "lucide-react";
+import { Loader2, Plus, RefreshCw, Sparkles } from "lucide-react";
 import { cn, formatCurrency } from "@/lib/utils";
+import { ReceiptAgent } from "./_components/receipt-agent";
 
 type Filters = {
   category?: string;
@@ -23,6 +24,7 @@ export default function ExpensesPage() {
   const [listLoading, setListLoading] = useState(true);
   const [listError, setListError] = useState<string | null>(null);
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [showAgent, setShowAgent] = useState(false);
 
   const categories = useMemo(() => {
     const set = new Set<string>();
@@ -76,12 +78,29 @@ export default function ExpensesPage() {
             <RefreshCw className={cn("mr-2 h-4 w-4", listLoading && "animate-spin")} />
             Refresh
           </Button>
+          <Button
+            variant={showAgent ? "default" : "outline"}
+            size="sm"
+            onClick={() => setShowAgent(!showAgent)}
+          >
+            <Sparkles className="mr-2 h-4 w-4" />
+            {showAgent ? "Hide" : "Scan"} Receipt
+          </Button>
           <Button size="sm" onClick={() => router.push("/personal/expenses/new")}>
             <Plus className="mr-2 h-4 w-4" />
             New expense
           </Button>
         </div>
       </div>
+
+      {showAgent && (
+        <ReceiptAgent
+          onExpenseSaved={() => {
+            fetchExpenses();
+            setShowAgent(false);
+          }}
+        />
+      )}
 
       <Card>
         <CardHeader>
@@ -186,7 +205,12 @@ export default function ExpensesPage() {
                       </span>
                     </div>
                     <span className="text-sm font-semibold text-ink-900">
-                      {formatCurrency(exp.amount.toNumber ? exp.amount.toNumber() : exp.amount, exp.currency)}
+                      {formatCurrency(
+                        typeof exp.amount === "object" && "toNumber" in exp.amount
+                          ? exp.amount.toNumber()
+                          : Number(exp.amount),
+                        exp.currency
+                      )}
                     </span>
                   </div>
                   <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600">
