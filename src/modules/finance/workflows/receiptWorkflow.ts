@@ -1,7 +1,6 @@
 import { onEvent } from "@/modules/kernel/workflows";
 import { suggestReceiptCategorisation } from "@/modules/kernel/ai";
 import { db } from "@/lib/db";
-import { updateReceipt } from "../services/receipts";
 
 export async function handleNewReceipt(event: { payload: { receiptId: string } }) {
   const { receiptId } = event.payload;

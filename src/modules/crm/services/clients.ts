@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import type { CreateClientInput, ClientFilters, Client } from "../entities";
+import { Prisma } from "@prisma/client";
 
 export async function createClient(spaceId: string, input: CreateClientInput): Promise<Client> {
   return await db.client.create({
@@ -14,7 +15,7 @@ export async function createClient(spaceId: string, input: CreateClientInput): P
 }
 
 export async function listClients(spaceId: string, filters?: ClientFilters): Promise<Client[]> {
-  const where: any = { spaceId };
+  const where: Prisma.ClientWhereInput = { spaceId };
 
   if (filters?.search) {
     where.OR = [

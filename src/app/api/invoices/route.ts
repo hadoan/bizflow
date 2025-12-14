@@ -4,6 +4,12 @@ import { getCurrentUserWithSpace } from "@/lib/auth";
 import { createInvoiceSchema, invoiceFiltersSchema } from "@/lib/schemas";
 import { InvoiceStatus } from "@prisma/client";
 
+type InvoiceFilters = {
+  status?: InvoiceStatus;
+  fromDate?: Date;
+  toDate?: Date;
+};
+
 export async function GET(req: NextRequest) {
   try {
     // Get authenticated user and their default space
@@ -21,7 +27,7 @@ export async function GET(req: NextRequest) {
     });
 
     // Build filters object for the service
-    const serviceFilters: any = {};
+    const serviceFilters: InvoiceFilters = {};
 
     if (filters.status) {
       serviceFilters.status = filters.status;

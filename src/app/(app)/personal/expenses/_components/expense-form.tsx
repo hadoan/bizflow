@@ -51,21 +51,33 @@ export function ExpenseForm({ mode, initialExpense, onSaved }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
+  const toNumeric = (value: unknown): number | "" => {
+    if (value === null || value === undefined) return "";
+    if (typeof value === "number") return value;
+    if (typeof value === "string") {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : "";
+    }
+    if (typeof value === "object" && value !== null && "toNumber" in value) {
+      const numeric = (value as { toNumber?: () => number }).toNumber?.();
+      return typeof numeric === "number" && Number.isFinite(numeric) ? numeric : "";
+    }
+    return "";
+  };
+
   useEffect(() => {
     if (initialExpense) {
       setForm({
         vendor: initialExpense.vendor ?? "",
         category: initialExpense.category ?? "",
-        amount: initialExpense.amount?.toNumber ? initialExpense.amount.toNumber() : (initialExpense.amount as any),
+        amount: toNumeric(initialExpense.amount),
         currency: initialExpense.currency ?? "EUR",
         date: initialExpense.date ? new Date(initialExpense.date).toISOString().split("T")[0] : emptyForm.date,
-        taxAmount: initialExpense.taxAmount?.toNumber
-          ? initialExpense.taxAmount.toNumber()
-          : (initialExpense.taxAmount as any) ?? "",
+        taxAmount: toNumeric(initialExpense.taxAmount),
         projectLink: initialExpense.projectLink ?? "",
         billable: initialExpense.billable ?? false,
         notes: initialExpense.notes ?? "",
-        fxRate: initialExpense.fxRate?.toNumber ? initialExpense.fxRate.toNumber() : (initialExpense.fxRate as any) ?? "",
+        fxRate: toNumeric(initialExpense.fxRate),
       });
     } else {
       setForm(emptyForm);

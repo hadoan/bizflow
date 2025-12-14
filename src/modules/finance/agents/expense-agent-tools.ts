@@ -7,7 +7,6 @@ import {
   validateReceipt,
 } from '../services/receipt-extraction';
 import {
-  processReceipt,
   updateExpenseDraft,
   commitExpenseDraft,
   discardExpenseDraft,

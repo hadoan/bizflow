@@ -28,6 +28,22 @@ type WorkspaceResponse = {
   gettingStarted: ChecklistItem[];
 };
 
+type WorkspaceSummary = {
+  id: string;
+  name: string;
+  slug: string;
+  currency: string;
+  timezone: string;
+  locale: string;
+};
+
+type WorkspaceListResponse = {
+  workspaces?: WorkspaceSummary[];
+  defaultSpaceId?: string;
+};
+
+type Identity = IdentityForm & { id: string };
+
 type IdentityForm = {
   id?: string;
   legalName: string;
@@ -129,8 +145,8 @@ export default function SettingsPage() {
       try {
         const res = await fetch("/api/business-identity");
         if (!res.ok) return;
-        const identities = await res.json();
-        const current = identities.find((i: any) => i.isDefault) ?? identities[0];
+        const identities = (await res.json()) as Identity[];
+        const current = identities.find((i) => i.isDefault) ?? identities[0];
         if (current) {
           setIdentityForm({
             id: current.id,
@@ -159,9 +175,9 @@ export default function SettingsPage() {
       try {
         const res = await fetch("/api/workspaces");
         if (!res.ok) return;
-        const data = await res.json();
+        const data = (await res.json()) as WorkspaceListResponse;
         const active =
-          data.workspaces?.find((w: any) => w.id === data.defaultSpaceId) ?? data.workspaces?.[0];
+          data.workspaces?.find((w) => w.id === data.defaultSpaceId) ?? data.workspaces?.[0];
         if (active) {
           setForm({
             name: active.name ?? "",
@@ -216,9 +232,17 @@ export default function SettingsPage() {
   const sortedChecklist = useMemo(() => {
     if (!result?.gettingStarted) return [];
     return [...result.gettingStarted].sort((a, b) => {
-      const orderA = (a.metadata as any)?.order ?? 0;
-      const orderB = (b.metadata as any)?.order ?? 0;
-      return orderA - orderB;
+      const orderA =
+        typeof a.metadata === "object" && a.metadata !== null && "order" in a.metadata
+          ? (a.metadata as { order?: unknown }).order
+          : undefined;
+      const orderB =
+        typeof b.metadata === "object" && b.metadata !== null && "order" in b.metadata
+          ? (b.metadata as { order?: unknown }).order
+          : undefined;
+      const safeOrderA = typeof orderA === "number" ? orderA : 0;
+      const safeOrderB = typeof orderB === "number" ? orderB : 0;
+      return safeOrderA - safeOrderB;
     });
   }, [result]);
 

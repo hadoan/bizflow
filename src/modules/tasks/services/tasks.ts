@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import type { CreateTaskInput, TaskFilters, Task } from "../entities";
-import { TaskStatus } from "@prisma/client";
+import { TaskStatus, Prisma } from "@prisma/client";
 
 export async function createTask(spaceId: string, input: CreateTaskInput): Promise<Task> {
   return await db.task.create({
@@ -15,7 +15,7 @@ export async function createTask(spaceId: string, input: CreateTaskInput): Promi
 }
 
 export async function listTasks(spaceId: string, filters?: TaskFilters): Promise<Task[]> {
-  const where: any = { spaceId };
+  const where: Prisma.TaskWhereInput = { spaceId };
 
   if (filters?.status) {
     where.status = filters.status;

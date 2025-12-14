@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
 import { emitEvent } from "@/modules/kernel/workflows";
 import type { TaxOverview } from "../entities";
-import { TaxPeriodType, TaxPeriodStatus, InvoiceStatus, ReceiptStatus } from "@prisma/client";
+import { TaxPeriodType, TaxPeriodStatus, InvoiceStatus, ReceiptStatus, Prisma } from "@prisma/client";
 
 export async function getTaxConfig(spaceId: string) {
   let config = await db.taxConfig.findUnique({
@@ -155,7 +155,7 @@ export async function closeTaxPeriod(
 }
 
 export async function getTaxPeriods(spaceId: string, year?: number) {
-  const where: any = { spaceId };
+  const where: Prisma.TaxPeriodWhereInput = { spaceId };
   if (year) {
     where.year = year;
   }

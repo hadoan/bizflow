@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import type { CreateInboxItemInput, InboxItemFilters, InboxItem } from "../entities";
-import { InboxItemStatus, InboxItemType } from "@prisma/client";
+import { InboxItemStatus, InboxItemType, Prisma } from "@prisma/client";
 
 export async function createInboxItem(spaceId: string, input: CreateInboxItemInput): Promise<InboxItem> {
   return await db.inboxItem.create({
@@ -20,7 +20,7 @@ export async function listInboxItems(
   spaceId: string,
   filters?: InboxItemFilters
 ): Promise<InboxItem[]> {
-  const where: any = { spaceId };
+  const where: Prisma.InboxItemWhereInput = { spaceId };
 
   if (filters?.status) {
     where.status = filters.status;

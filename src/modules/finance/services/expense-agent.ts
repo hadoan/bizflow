@@ -2,7 +2,6 @@
 // Implements the full workflow: extract → categorize → draft → confirm → save
 
 import { db } from "@/lib/db";
-import { callLLM } from "@/lib/ai";
 import {
   extractReceiptData,
   validateReceipt,
@@ -10,6 +9,7 @@ import {
   type ReceiptValidationResult,
 } from "./receipt-extraction";
 import { suggestReceiptCategorisation } from "@/modules/kernel/ai/receiptCategorisation";
+import { Prisma, type Expense } from "@prisma/client";
 import { Decimal } from "@prisma/client/runtime/library";
 
 export interface ExpenseDraft {
@@ -184,9 +184,9 @@ async function createExpenseDraft(
     taxAmount?: number | null;
     notes?: string | null;
     fileId?: string;
-    agentMetadata?: any;
+    agentMetadata?: Record<string, unknown>;
   }
-) {
+): Promise<Expense> {
   const space = await db.space.findUnique({
     where: { id: spaceId },
     select: { currency: true },
@@ -219,7 +219,7 @@ async function createExpenseDraft(
       notes: input.notes,
       status: "DRAFT",
       fileId: input.fileId,
-      agentMetadata: input.agentMetadata,
+      agentMetadata: (input.agentMetadata ?? Prisma.DbNull) as Prisma.InputJsonValue,
     },
   });
 }
@@ -240,7 +240,7 @@ export async function commitExpenseDraft(
     billable?: boolean;
     notes?: string;
   }
-): Promise<any> {
+): Promise<Expense> {
   const draft = await db.expense.findFirst({
     where: { id: draftId, spaceId, status: "DRAFT" },
   });
@@ -250,7 +250,7 @@ export async function commitExpenseDraft(
   }
 
   // Apply updates if provided
-  const updateData: any = {
+  const updateData: Prisma.ExpenseUpdateInput = {
     status: "FINAL",
   };
 
@@ -288,7 +288,7 @@ export async function updateExpenseDraft(
     billable?: boolean;
     notes?: string;
   }
-): Promise<any> {
+): Promise<Expense> {
   const draft = await db.expense.findFirst({
     where: { id: draftId, spaceId, status: "DRAFT" },
   });
@@ -297,7 +297,7 @@ export async function updateExpenseDraft(
     throw new Error("Draft not found");
   }
 
-  const updateData: any = {};
+  const updateData: Prisma.ExpenseUpdateInput = {};
 
   if (updates.vendor) updateData.vendor = updates.vendor;
   if (updates.category) updateData.category = updates.category;
@@ -422,7 +422,7 @@ function calculateStringSimilarity(a: string, b: string): number {
  */
 function determineQuestions(
   extracted: ExtractedReceiptData,
-  validation: ReceiptValidationResult
+  _validation: ReceiptValidationResult
 ): AgentQuestion[] {
   const questions: AgentQuestion[] = [];
 

@@ -2,11 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUserWithSpace } from "@/lib/auth";
 import { db } from "@/lib/db";
 
-export async function GET(_req: NextRequest, { params }: any) {
+export async function GET(req: NextRequest) {
   try {
     const { space } = await getCurrentUserWithSpace();
+    const id = req.nextUrl.pathname.split("/").pop();
+    if (!id) {
+      return NextResponse.json({ error: "Missing receipt id" }, { status: 400 });
+    }
     const receipt = await db.receipt.findFirst({
-      where: { id: params.id, spaceId: space.id },
+      where: { id, spaceId: space.id },
     });
 
     if (!receipt) {

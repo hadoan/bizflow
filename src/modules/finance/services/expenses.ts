@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import type { CreateExpenseInput, ExpenseFilters } from "../entities/expenses";
 import { Decimal } from "@prisma/client/runtime/library";
+import { Prisma } from "@prisma/client";
 
 export async function createExpense(spaceId: string, input: CreateExpenseInput) {
   const space = await db.space.findUnique({
@@ -43,13 +44,14 @@ export async function createExpense(spaceId: string, input: CreateExpenseInput) 
 }
 
 export async function listExpenses(spaceId: string, filters?: ExpenseFilters) {
-  const where: any = { spaceId, status: "FINAL" }; // Only show finalized expenses
+  const where: Prisma.ExpenseWhereInput = { spaceId, status: "FINAL" }; // Only show finalized expenses
   if (filters?.category) where.category = filters.category;
   if (filters?.projectLink) where.projectLink = filters.projectLink;
   if (filters?.fromDate || filters?.toDate) {
-    where.date = {};
-    if (filters.fromDate) where.date.gte = filters.fromDate;
-    if (filters.toDate) where.date.lte = filters.toDate;
+    const dateFilter: Prisma.DateTimeFilter = {};
+    if (filters.fromDate) dateFilter.gte = filters.fromDate;
+    if (filters.toDate) dateFilter.lte = filters.toDate;
+    where.date = dateFilter;
   }
 
   return db.expense.findMany({

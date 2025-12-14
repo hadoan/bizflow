@@ -2,8 +2,7 @@ import { db } from "@/lib/db";
 import { calculateVAT, calculateGross } from "@/lib/utils";
 import { emitEvent } from "@/modules/kernel/workflows";
 import type { CreateInvoiceInput, InvoiceWithLineItems, InvoiceFilters } from "../entities";
-import { InvoiceStatus } from "@prisma/client";
-import { getDocumentSettings } from "@/modules/documents/services";
+import { InvoiceStatus, Prisma } from "@prisma/client";
 
 async function generateNextInvoiceNumber(spaceId: string): Promise<string> {
   const currentYear = new Date().getFullYear();
@@ -61,7 +60,6 @@ export async function createInvoice(
   spaceId: string,
   input: CreateInvoiceInput
 ): Promise<InvoiceWithLineItems> {
-  const settings = await getDocumentSettings(spaceId);
   const space = await db.space.findUnique({
     where: { id: spaceId },
     select: { currency: true, currencyLockedAt: true },
@@ -154,7 +152,7 @@ export async function listInvoices(
   spaceId: string,
   filters?: InvoiceFilters
 ): Promise<InvoiceWithLineItems[]> {
-  const where: any = { spaceId };
+  const where: Prisma.InvoiceWhereInput = { spaceId };
 
   if (filters?.status) {
     where.status = filters.status;
@@ -165,13 +163,14 @@ export async function listInvoices(
   }
 
   if (filters?.fromDate || filters?.toDate) {
-    where.issueDate = {};
+    const issueDate: Prisma.DateTimeFilter = {};
     if (filters.fromDate) {
-      where.issueDate.gte = filters.fromDate;
+      issueDate.gte = filters.fromDate;
     }
     if (filters.toDate) {
-      where.issueDate.lte = filters.toDate;
+      issueDate.lte = filters.toDate;
     }
+    where.issueDate = issueDate;
   }
 
   return await db.invoice.findMany({

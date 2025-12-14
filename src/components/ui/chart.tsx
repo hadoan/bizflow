@@ -20,6 +20,21 @@ type ChartContextProps = {
   config: ChartConfig;
 };
 
+type ChartTooltipItem = {
+  name?: string;
+  value?: number | string;
+  color?: string;
+  payload?: Record<string, unknown>;
+  dataKey?: string;
+};
+
+type ChartLegendItem = {
+  value?: string;
+  color?: string;
+  dataKey?: string;
+  payload?: Record<string, unknown>;
+};
+
 const ChartContext = React.createContext<ChartContextProps | null>(null);
 
 function useChart() {
@@ -102,7 +117,7 @@ const ChartTooltipContent = React.forwardRef<
       nameKey?: string;
       labelKey?: string;
       active?: boolean;
-      payload?: Array<any>;
+      payload?: ChartTooltipItem[];
       label?: string;
     }
 >(
@@ -171,7 +186,7 @@ const ChartTooltipContent = React.forwardRef<
           {payload.map((item, index) => {
             const key = `${nameKey || item.name || item.dataKey || "value"}`;
             const itemConfig = getPayloadConfigFromPayload(config, item, key);
-            const indicatorColor = color || item.payload.fill || item.color;
+            const indicatorColor = color || (item.payload as { fill?: string } | undefined)?.fill || item.color;
 
             return (
               <div
@@ -182,7 +197,13 @@ const ChartTooltipContent = React.forwardRef<
                 )}
               >
                 {formatter && item?.value !== undefined && item.name ? (
-                  formatter(item.value, item.name, item, index, item.payload)
+                  formatter(
+                    item.value,
+                    item.name,
+                    item,
+                    index,
+                    Array.isArray(item.payload) ? item.payload : []
+                  )
                 ) : (
                   <>
                     {itemConfig?.icon ? (
@@ -244,7 +265,7 @@ const ChartLegend = RechartsPrimitive.Legend;
 const ChartLegendContent = React.forwardRef<
   HTMLDivElement,
   React.ComponentProps<"div"> & {
-    payload?: Array<any>;
+    payload?: ChartLegendItem[];
     verticalAlign?: "top" | "bottom" | "middle";
     hideIcon?: boolean;
     nameKey?: string;

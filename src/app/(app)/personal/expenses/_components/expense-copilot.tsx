@@ -5,7 +5,6 @@ import { useRef, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import {
   Bot,
   User,
@@ -15,9 +14,21 @@ import {
   X,
   Sparkles,
   AlertCircle,
-  CheckCircle2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import type { ChatRequestOptions, Message } from 'ai';
+
+type Attachment = { name?: string; contentType?: string; url?: string };
+type ToolInvocation = {
+  toolCallId: string;
+  toolName: string;
+  state: 'call' | 'result';
+  result?: unknown;
+};
+type ChatMessage = Message & {
+  experimental_attachments?: Attachment[];
+  toolInvocations?: ToolInvocation[];
+};
 
 interface ExpenseCopilotProps {
   onExpenseSaved?: () => void;
@@ -88,9 +99,9 @@ export function ExpenseCopilot({ onExpenseSaved }: ExpenseCopilotProps) {
 
         // Auto-send message with attachment
         setTimeout(() => {
-          handleSubmit(new Event('submit') as any, {
+          handleSubmit(new Event('submit') as unknown as React.FormEvent<HTMLFormElement>, {
             experimental_attachments: attachments,
-          });
+          } as ChatRequestOptions);
         }, 100);
       });
     }
@@ -131,7 +142,7 @@ export function ExpenseCopilot({ onExpenseSaved }: ExpenseCopilotProps) {
       Promise.all(filePromises).then((attachments) => {
         handleSubmit(e, {
           experimental_attachments: attachments,
-        });
+        } as ChatRequestOptions);
         setAttachedFiles([]);
       });
     } else {
@@ -186,7 +197,7 @@ export function ExpenseCopilot({ onExpenseSaved }: ExpenseCopilotProps) {
             </div>
           )}
 
-          {messages.map((message) => (
+          {messages.map((message: Message) => (
             <div
               key={message.id}
               className={cn(
@@ -226,7 +237,7 @@ export function ExpenseCopilot({ onExpenseSaved }: ExpenseCopilotProps) {
                   )}
                 >
                   {/* Handle tool calls in message */}
-                  {message.toolInvocations?.map((toolInvocation: any) => (
+                  {(message as ChatMessage).toolInvocations?.map((toolInvocation) => (
                     <div key={toolInvocation.toolCallId} className="text-xs opacity-75 mb-2">
                       <Loader2 className="h-3 w-3 inline-block animate-spin mr-1" />
                       {toolInvocation.state === 'call' && `Calling ${toolInvocation.toolName}...`}
@@ -238,14 +249,20 @@ export function ExpenseCopilot({ onExpenseSaved }: ExpenseCopilotProps) {
                   <div className="prose prose-sm max-w-none">
                     {/* Vercel AI SDK may return string or array content; normalize to string for rendering */}
                     {(() => {
-                      const content = (message as any).content;
+                      const content = message.content as unknown;
                       if (typeof content === 'string') return content;
                       if (Array.isArray(content)) {
                         return content
-                          .map((block: any) => {
+                          .map((block) => {
                             if (typeof block === 'string') return block;
-                            if (block?.text) return block.text;
-                            if (block?.content) return block.content;
+                            if (typeof block === 'object' && block) {
+                              if ('text' in block && typeof (block as { text?: string }).text === 'string') {
+                                return (block as { text: string }).text;
+                              }
+                              if ('content' in block && typeof (block as { content?: string }).content === 'string') {
+                                return (block as { content: string }).content;
+                              }
+                            }
                             return '';
                           })
                           .join('\n');
@@ -294,8 +311,8 @@ export function ExpenseCopilot({ onExpenseSaved }: ExpenseCopilotProps) {
 
                   {/* Show attachments for user messages */}
                   {message.role === 'user' &&
-                    (message as any).experimental_attachments?.map(
-                      (attachment: any, i: number) => (
+                    (message as ChatMessage).experimental_attachments?.map(
+                      (attachment, i: number) => (
                         <div
                           key={i}
                           className="flex items-center gap-2 mt-2 text-xs bg-white/20 rounded px-2 py-1"

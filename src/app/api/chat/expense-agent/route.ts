@@ -3,6 +3,17 @@ import { NextRequest } from 'next/server';
 import { getCurrentUserWithSpace } from '@/lib/auth';
 import { getDefaultModel } from '@/lib/ai-sdk';
 import { expenseAgentTools } from '@/modules/finance/agents/expense-agent-tools';
+import type { CoreMessage } from 'ai';
+
+type Attachment = { name?: string; contentType?: string; url?: string };
+type IncomingMessage = {
+  id?: string;
+  role: string;
+  content: unknown;
+  experimental_attachments?: Attachment[];
+  toolInvocations?: unknown;
+  [key: string]: unknown;
+};
 
 // export const runtime = 'edge';
 export const maxDuration = 30;
@@ -96,22 +107,25 @@ export async function POST(req: NextRequest) {
   try {
     const { user, space } = await getCurrentUserWithSpace();
 
-    const { messages } = await req.json();
+    const { messages } = (await req.json()) as { messages: IncomingMessage[] };
 
     // Extract attachments from messages
-    const attachments = messages
-      .flatMap((msg: any) => msg.experimental_attachments || [])
-      .filter((att: any) => att.contentType?.startsWith('image/') || att.contentType === 'application/pdf');
+    const attachments: Attachment[] = messages
+      .flatMap((msg) => msg.experimental_attachments || [])
+      .filter(
+        (att): att is Attachment =>
+          !!att &&
+          typeof att === 'object' &&
+          'contentType' in att &&
+          (typeof att.contentType === 'string' &&
+            (att.contentType.startsWith('image/') || att.contentType === 'application/pdf'))
+      );
 
     // Check for blob URLs which can't be processed server-side
-    const hasBlobUrls = attachments.some((att: any) =>
-      att.url?.startsWith('blob:')
-    );
+    const hasBlobUrls = attachments.some((att) => att.url?.startsWith('blob:'));
 
     // Check for data URLs which can be processed
-    const hasDataUrls = attachments.some((att: any) =>
-      att.url?.startsWith('data:')
-    );
+    const hasDataUrls = attachments.some((att) => att.url?.startsWith('data:'));
 
     // Convert attachments to context for the agent
     let attachmentContext = '';
@@ -119,33 +133,38 @@ export async function POST(req: NextRequest) {
       if (hasBlobUrls) {
         attachmentContext = `\n\n⚠️ File attachments detected but cannot be processed directly. Please use the file upload feature to process receipts instead of attaching them in chat.`;
       } else if (hasDataUrls) {
-        attachmentContext = `\n\nUser has uploaded ${attachments.length} attachment(s): ${attachments.map((a: any) => a.name || 'unnamed').join(', ')}`;
+        attachmentContext = `\n\nUser has uploaded ${attachments.length} attachment(s): ${attachments.map((a) => a.name || 'unnamed').join(', ')}`;
       } else {
-        attachmentContext = `\n\nUser has uploaded ${attachments.length} attachment(s): ${attachments.map((a: any) => a.name || 'unnamed').join(', ')}`;
+        attachmentContext = `\n\nUser has uploaded ${attachments.length} attachment(s): ${attachments.map((a) => a.name || 'unnamed').join(', ')}`;
       }
     }
 
     // Process data URLs and add them to the context
     if (hasDataUrls) {
-      const dataUrlAttachments = attachments.filter((att: any) => att.url?.startsWith('data:'));
-      attachmentContext += `\n\nAvailable attachments for processing:\n${dataUrlAttachments.map((att: any, index: number) =>
+      const dataUrlAttachments = attachments.filter(
+        (att): att is Attachment & { url: string } =>
+          typeof att.url === 'string' && att.url.startsWith('data:')
+      );
+      attachmentContext += `\n\nAvailable attachments for processing:\n${dataUrlAttachments.map((att, index: number) =>
         `${index + 1}. ${att.name} (${att.contentType}) - Data: ${att.url.substring(0, 50)}...`
       ).join('\n')}`;
     }
 
     // Filter out blob URLs to prevent AI SDK errors, but keep data URLs
-    const filteredMessages = messages.map((msg: any) => ({
+    const filteredMessages = messages.map((msg) => ({
       ...msg,
-      experimental_attachments: msg.experimental_attachments?.filter((att: any) =>
+      experimental_attachments: msg.experimental_attachments?.filter((att) =>
         !att.url?.startsWith('blob:')
       ) || []
     }));
 
     // Remove client-side tool invocation metadata (incomplete tool calls break AI SDK conversion)
-    const sanitizedMessages = filteredMessages.map((msg: any) => {
+    const sanitizedMessages: CoreMessage[] = filteredMessages.map((msg) => {
       // strip toolInvocations entirely; server will handle tools fresh
-      const { toolInvocations, ...rest } = msg;
-      return rest;
+      const { toolInvocations: _toolInvocations, ...rest } = msg;
+      const role =
+        rest.role === 'assistant' || rest.role === 'system' || rest.role === 'tool' ? rest.role : 'user';
+      return { ...rest, role } as CoreMessage;
     });
 
     // Stream response with tools
@@ -156,7 +175,7 @@ export async function POST(req: NextRequest) {
       tools: expenseAgentTools,
       maxSteps: 6, // allow follow-up after tool calls so user sees final message
       experimental_continueSteps: true, // ensure the model continues after tool results
-      onFinish: ({ usage, finishReason }: any) => {
+      onFinish: ({ usage, finishReason }: { usage?: unknown; finishReason?: string | null }) => {
         console.log('Chat finished:', { usage, finishReason });
       },
     });

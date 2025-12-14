@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { AlertCircle, CheckCircle2, FileText, Loader2, Upload, X } from "lucide-react";
-import { cn, formatCurrency } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 
 interface ExpenseDraft {
   id: string;
@@ -33,19 +33,11 @@ interface ExpenseDraft {
   warnings: string[];
 }
 
-interface AgentQuestion {
-  field: string;
-  question: string;
-  options?: Array<{ value: string; label: string }>;
-  currentValue: string | null;
-}
-
 type AgentStatus = "idle" | "uploading" | "extracting" | "reviewing" | "ready" | "saving" | "error";
 
 export function ReceiptAgent({ onExpenseSaved }: { onExpenseSaved?: () => void }) {
   const [status, setStatus] = useState<AgentStatus>("idle");
   const [draft, setDraft] = useState<ExpenseDraft | null>(null);
-  const [questions, setQuestions] = useState<AgentQuestion[]>([]);
   const [message, setMessage] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -91,7 +83,6 @@ export function ReceiptAgent({ onExpenseSaved }: { onExpenseSaved?: () => void }
       const result = await response.json();
 
       setDraft(result.draft);
-      setQuestions(result.questions);
       setMessage(result.message);
       setStatus(result.status);
 
@@ -147,7 +138,6 @@ export function ReceiptAgent({ onExpenseSaved }: { onExpenseSaved?: () => void }
       // Success!
       setStatus("idle");
       setDraft(null);
-      setQuestions([]);
       setMessage("");
       setSelectedFile(null);
       onExpenseSaved?.();
@@ -168,7 +158,6 @@ export function ReceiptAgent({ onExpenseSaved }: { onExpenseSaved?: () => void }
 
       setStatus("idle");
       setDraft(null);
-      setQuestions([]);
       setMessage("");
       setSelectedFile(null);
     } catch (err) {

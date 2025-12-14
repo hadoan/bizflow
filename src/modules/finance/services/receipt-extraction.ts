@@ -146,16 +146,21 @@ If a field is unclear or missing, use null. Set confidence scores based on how c
 /**
  * Sanitize extracted data to prevent injection attacks
  */
-function sanitizeExtractedData(data: any): ExtractedReceiptData {
+function sanitizeExtractedData(
+  data: Partial<ExtractedReceiptData> & {
+    lineItems?: unknown[];
+    confidence?: Record<string, unknown>;
+  }
+): ExtractedReceiptData {
   // Ensure all string fields are actually strings and truncate if too long
-  const sanitizeString = (val: any, maxLength = 500): string | null => {
+  const sanitizeString = (val: unknown, maxLength = 500): string | null => {
     if (val === null || val === undefined) return null;
     const str = String(val).substring(0, maxLength);
     // Remove any potential code/script content
     return str.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
   };
 
-  const sanitizeNumber = (val: any): number | null => {
+  const sanitizeNumber = (val: unknown): number | null => {
     if (val === null || val === undefined) return null;
     const num = Number(val);
     return !isNaN(num) && isFinite(num) ? num : null;
@@ -171,12 +176,15 @@ function sanitizeExtractedData(data: any): ExtractedReceiptData {
     netAmount: sanitizeNumber(data.netAmount),
     paymentMethod: sanitizeString(data.paymentMethod, 50),
     lineItems: Array.isArray(data.lineItems)
-      ? data.lineItems.slice(0, 50).map((item: any) => ({
-          description: sanitizeString(item.description, 200) || "",
-          quantity: sanitizeNumber(item.quantity) || 1,
-          unitPrice: sanitizeNumber(item.unitPrice) || 0,
-          total: sanitizeNumber(item.total) || 0,
-        }))
+      ? data.lineItems.slice(0, 50).map((item) => {
+          const row = typeof item === "object" && item !== null ? (item as Record<string, unknown>) : {};
+          return {
+            description: sanitizeString(row.description, 200) || "",
+            quantity: sanitizeNumber(row.quantity) || 1,
+            unitPrice: sanitizeNumber(row.unitPrice) || 0,
+            total: sanitizeNumber(row.total) || 0,
+          };
+        })
       : [],
     country: sanitizeString(data.country, 50),
     notes: sanitizeString(data.notes, 1000),
@@ -289,8 +297,8 @@ export function validateReceipt(data: ExtractedReceiptData): ReceiptValidationRe
  * This is a simpler extraction that just gets text without structure
  */
 export async function extractReceiptText(
-  imageData: string,
-  mimeType: string
+  _imageData: string,
+  _mimeType: string
 ): Promise<string> {
   const prompt = `Extract all visible text from this receipt image. Return only the text you see, preserving the layout as much as possible.`;
 

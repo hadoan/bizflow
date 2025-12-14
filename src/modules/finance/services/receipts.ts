@@ -2,7 +2,7 @@ import { db } from "@/lib/db";
 import { calculateNet, calculateVAT } from "@/lib/utils";
 import { emitEvent } from "@/modules/kernel/workflows";
 import type { CreateReceiptInput, ReceiptFilters } from "../entities";
-import { Receipt, ReceiptStatus } from "@prisma/client";
+import { Prisma, Receipt, ReceiptStatus } from "@prisma/client";
 
 export async function createReceipt(spaceId: string, input: CreateReceiptInput): Promise<Receipt> {
   const netAmount = input.grossAmount / (1 + (input.vatRate ?? 0.19));
@@ -48,7 +48,7 @@ export async function createReceiptFromUpload(
 }
 
 export async function listReceipts(spaceId: string, filters?: ReceiptFilters): Promise<Receipt[]> {
-  const where: any = { spaceId };
+  const where: Prisma.ReceiptWhereInput = { spaceId };
 
   if (filters?.status) {
     where.status = filters.status;
@@ -59,13 +59,14 @@ export async function listReceipts(spaceId: string, filters?: ReceiptFilters): P
   }
 
   if (filters?.fromDate || filters?.toDate) {
-    where.documentDate = {};
+    const documentDate: Prisma.DateTimeFilter = {};
     if (filters.fromDate) {
-      where.documentDate.gte = filters.fromDate;
+      documentDate.gte = filters.fromDate;
     }
     if (filters.toDate) {
-      where.documentDate.lte = filters.toDate;
+      documentDate.lte = filters.toDate;
     }
+    where.documentDate = documentDate;
   }
 
   return await db.receipt.findMany({
@@ -90,7 +91,7 @@ export async function updateReceipt(
   receiptId: string,
   updates: Partial<CreateReceiptInput>
 ): Promise<Receipt> {
-  const data: any = {};
+  const data: Prisma.ReceiptUpdateInput = {};
 
   if (updates.vendorName) data.vendorName = updates.vendorName;
   if (updates.documentDate) data.documentDate = updates.documentDate;

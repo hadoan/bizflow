@@ -1,13 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { storage } from "@/lib/storage";
 
-export async function GET(
-  _req: Request,
-  { params }: any
-): Promise<NextResponse> {
+export async function GET(req: NextRequest): Promise<NextResponse> {
   try {
-    const segments = Array.isArray(params.path) ? params.path : [params.path];
-    const key = segments.join("/");
+    const pathname = req.nextUrl.pathname.replace(/^\/api\/files\//, "");
+    const key = pathname.startsWith("/") ? pathname.slice(1) : pathname;
     const buffer = await storage.download(key);
     const contentType = key.endsWith(".svg")
       ? "image/svg+xml"

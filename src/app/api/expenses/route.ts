@@ -2,6 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUserWithSpace } from "@/lib/auth";
 import { createExpense, listExpenses } from "@/modules/finance/services";
 
+type ExpenseFilters = {
+  category?: string;
+  projectLink?: string;
+  fromDate?: Date;
+  toDate?: Date;
+};
+
 export async function GET(req: NextRequest) {
   try {
     const { space } = await getCurrentUserWithSpace();
@@ -11,7 +18,7 @@ export async function GET(req: NextRequest) {
     const from = searchParams.get("from");
     const to = searchParams.get("to");
 
-    const filters: any = {};
+    const filters: ExpenseFilters = {};
     if (category) filters.category = category;
     if (projectLink) filters.projectLink = projectLink;
     if (from) filters.fromDate = new Date(from);

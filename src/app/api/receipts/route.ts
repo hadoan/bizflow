@@ -4,6 +4,13 @@ import { getCurrentUserWithSpace } from "@/lib/auth";
 import { createReceiptFromUploadSchema, receiptFiltersSchema } from "@/lib/schemas";
 import { ReceiptStatus } from "@prisma/client";
 
+type ReceiptFilters = {
+  status?: ReceiptStatus;
+  category?: string;
+  fromDate?: Date;
+  toDate?: Date;
+};
+
 export async function GET(req: NextRequest) {
   try {
     // Get authenticated user and their default space
@@ -23,7 +30,7 @@ export async function GET(req: NextRequest) {
     });
 
     // Build filters object for the service
-    const serviceFilters: any = {};
+    const serviceFilters: ReceiptFilters = {};
 
     if (filters.status) {
       serviceFilters.status = filters.status;
