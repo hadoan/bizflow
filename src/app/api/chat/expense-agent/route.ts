@@ -4,6 +4,7 @@ import { getCurrentUserWithSpace } from '@/lib/auth';
 import { getDefaultModel } from '@/lib/ai-sdk';
 import { expenseAgentTools } from '@/modules/finance/agents/expense-agent-tools';
 import type { CoreMessage } from 'ai';
+import { langfuse, isLangfuseEnabled, flushLangfuse } from '@/lib/langfuse';
 
 type Attachment = { name?: string; contentType?: string; url?: string };
 type IncomingMessage = {
@@ -104,10 +105,34 @@ IMPORTANT:
 - Trust tool results—they're already validated`;
 
 export async function POST(req: NextRequest) {
+  // Create Langfuse trace for this conversation
+  const trace = isLangfuseEnabled()
+    ? langfuse.trace({
+        name: 'expense-agent-chat',
+        metadata: {
+          endpoint: '/api/chat/expense-agent',
+        },
+      })
+    : null;
+
   try {
     const { user, space } = await getCurrentUserWithSpace();
 
     const { messages } = (await req.json()) as { messages: IncomingMessage[] };
+
+    // Update trace with user context
+    if (trace) {
+      trace.update({
+        userId: user.id,
+        sessionId: `${space.id}-${user.id}`,
+        metadata: {
+          spaceId: space.id,
+          spaceName: space.name,
+          userEmail: user.email,
+          messageCount: messages.length,
+        },
+      });
+    }
 
     // Extract attachments from messages
     const attachments: Attachment[] = messages
@@ -167,22 +192,85 @@ export async function POST(req: NextRequest) {
       return { ...rest, role } as CoreMessage;
     });
 
+    const systemPromptWithContext = systemPrompt + attachmentContext + `\n\nCurrent context:\n- User: ${user.email}\n- Space ID: ${space.id}\n- Space Name: ${space.name}\n- Currency: ${space.currency}`;
+
+    // Create Langfuse generation span
+    const generation = trace?.generation({
+      name: 'expense-agent-llm-call',
+      model: process.env.AI_PROVIDER === 'anthropic' ? process.env.ANTHROPIC_MODEL || 'claude-3-haiku-20240307' : 'gpt-4o-mini',
+      input: {
+        system: systemPromptWithContext,
+        messages: sanitizedMessages,
+      },
+      metadata: {
+        hasAttachments: attachments.length > 0,
+        attachmentCount: attachments.length,
+        systemPromptLength: systemPromptWithContext.length,
+        toolCount: Object.keys(expenseAgentTools).length,
+        tools: Object.keys(expenseAgentTools),
+      },
+    });
+
     // Stream response with tools
     const result = await streamText({
       model: getDefaultModel(),
-      system: systemPrompt + attachmentContext + `\n\nCurrent context:\n- User: ${user.email}\n- Space ID: ${space.id}\n- Space Name: ${space.name}\n- Currency: ${space.currency}`,
+      system: systemPromptWithContext,
       messages: sanitizedMessages,
       tools: expenseAgentTools,
       maxSteps: 6, // allow follow-up after tool calls so user sees final message
       experimental_continueSteps: true, // ensure the model continues after tool results
-      onFinish: ({ usage, finishReason }: { usage?: unknown; finishReason?: string | null }) => {
+      onFinish: async ({ usage, finishReason, text, toolCalls, toolResults }: {
+        usage?: { promptTokens?: number; completionTokens?: number; totalTokens?: number };
+        finishReason?: string | null;
+        text?: string;
+        toolCalls?: unknown[];
+        toolResults?: unknown[];
+      }) => {
         console.log('Chat finished:', { usage, finishReason });
+
+        // Update Langfuse generation with completion data
+        if (generation && usage) {
+          generation.update({
+            output: {
+              text,
+              toolCalls: toolCalls || [],
+              toolResults: toolResults || [],
+            },
+            completionStartTime: new Date(),
+            usage: {
+              promptTokens: usage.promptTokens,
+              completionTokens: usage.completionTokens,
+              totalTokens: usage.totalTokens,
+            },
+            metadata: {
+              finishReason,
+              toolCallCount: toolCalls?.length || 0,
+              toolResultCount: toolResults?.length || 0,
+              toolsUsed: toolCalls?.map((tc: any) => tc.toolName).filter(Boolean) || [],
+            },
+          });
+          generation.end();
+        }
+
+        // Flush Langfuse events
+        await flushLangfuse();
       },
     });
 
-    return result.toTextStreamResponse();
+    return result.toAIStreamResponse();
   } catch (error) {
     console.error('Chat error:', error);
+
+    // Log error to Langfuse
+    if (trace) {
+      trace.update({
+        metadata: {
+          error: error instanceof Error ? error.message : 'Unknown error',
+          errorStack: error instanceof Error ? error.stack : undefined,
+        },
+      });
+      await flushLangfuse();
+    }
 
     if (error instanceof Error && error.message === 'Unauthorized') {
       return new Response(

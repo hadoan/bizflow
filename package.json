@@ -61,6 +61,8 @@
     "date-fns": "^4.1.0",
     "embla-carousel-react": "^8.6.0",
     "input-otp": "^1.4.2",
+    "langfuse": "^3.38.6",
+    "langfuse-vercel": "^3.38.6",
     "lucide-react": "^0.462.0",
     "next": "^15.0.3",
     "next-auth": "^5.0.0-beta.25",
